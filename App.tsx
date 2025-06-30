@@ -222,7 +222,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
         </div>
       </header>
       
-      {(!activeTestType || activeTestType === 'final_exam') && <SpecialNote />} 
+      {activeTestType === 'final_exam' && <SpecialNote />} 
       
       <main className="w-full max-w-3xl mx-auto mt-0">
         {(isSavingResults && !isResultsSubmitted && activeTestType === 'final_exam') && (
