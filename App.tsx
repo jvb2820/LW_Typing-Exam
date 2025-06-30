@@ -1,12 +1,22 @@
 
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import TypingTest from './components/TypingTest';
 import StatsDisplay from './components/StatsDisplay';
-import { TestStats, ActiveTestType } from './types';
+import { TestStats, ActiveTestType, ExerciseKey } from './types';
 import { supabase } from './supabaseClient'; 
 import { COMMON_WORDS } from './constants/words';
-import { EXERCISE_1_PHRASES, EXERCISE_2_PHRASES } from './constants/exercises';
+import {
+  WARMUP_HOME_ROW,
+  WARMUP_ALPHABET,
+  BASIC_SIMPLE_SENTENCES,
+  INTERMEDIATE_COMPLEX_SENTENCES,
+  INTERMEDIATE_PARAGRAPH,
+  ADVANCED_TECHNICAL_VOCAB,
+  ADVANCED_SPECIAL_CHARS,
+  ACCURACY_CHALLENGE_TEXT,
+} from './constants/exercises';
 
 interface AppProps {
   userId: string;
@@ -14,14 +24,65 @@ interface AppProps {
 }
 
 const FINAL_EXAM_DURATION = 60;
-const EXERCISE_DURATION = 45; 
-const WORDS_TO_GENERATE_FINAL_EXAM = 200;
+const WORDS_TO_GENERATE = 200;
 
 const NUMBERS_FOR_EXAM = ['1', '2', '7', '10', '25', '50', '100', '121', '300', '555', '999', '2024', '1989', '42'];
 
+type ExerciseInfo = {
+  key: ExerciseKey;
+  title: string;
+  description: string;
+};
+
+type ExerciseCategoryData = {
+  category: string;
+  items: ExerciseInfo[];
+};
+
+const EXERCISES_DATA: ExerciseCategoryData[] = [
+  {
+    category: '1. Warm-up & Introductory',
+    items: [
+      { key: 'warmup_home_row', title: 'Home Row Practice', description: 'Simple words using only home row keys (ASDF JKL;).' },
+      { key: 'warmup_alphabet', title: 'Alphabet Practice', description: 'Builds familiarity with all letter positions.' },
+    ],
+  },
+  {
+    category: '2. Basic Typing',
+    items: [
+      { key: 'basic_simple_sentences', title: 'Simple Sentences', description: 'Short sentences with basic punctuation to build speed.' },
+      { key: 'basic_common_words', title: 'Common Words', description: 'Practice the most frequently used English words.' },
+    ],
+  },
+  {
+    category: '3. Intermediate Typing',
+    items: [
+      { key: 'intermediate_complex_sentences', title: 'Complex Sentences', description: 'Longer sentences with mixed punctuation to improve fluidity.' },
+      { key: 'intermediate_paragraph', title: 'Paragraph Practice', description: 'Improve typing endurance with a full paragraph.' },
+    ],
+  },
+  {
+    category: '4. Advanced Typing',
+    items: [
+      { key: 'advanced_technical_vocab', title: 'Technical Vocabulary', description: 'Practice with terms from coding and other industries.' },
+      { key: 'advanced_special_chars', title: 'Special Characters', description: 'Sentences including characters like @, #, $, %.' },
+    ],
+  },
+  {
+    category: '5. Speed & Accuracy Drills',
+    items: [
+      { key: 'drill_timed_1_min', title: '1-Minute Timed Test', description: 'Assess your typing speed under timed conditions.' },
+      { key: 'drill_timed_3_min', title: '3-Minute Timed Test', description: 'A longer test to challenge your speed and consistency.' },
+      { key: 'drill_accuracy_challenge', title: 'Accuracy Challenge', description: 'Type a passage perfectly. The test ends on the first error.' },
+    ],
+  },
+];
+
 const generateRandomWords = (count: number, includeNumbers: boolean = false): string[] => {
-  const shuffled = [...COMMON_WORDS].sort(() => 0.5 - Math.random());
-  const words = shuffled.slice(0, count);
+  const words = [];
+  for (let i = 0; i < count; i++) {
+    words.push(COMMON_WORDS[Math.floor(Math.random() * COMMON_WORDS.length)]);
+  }
 
   if (includeNumbers) {
     const numbersToInsertCount = Math.floor(count * 0.1); // ~10% numbers
@@ -60,6 +121,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
   
   const [wordsToDisplay, setWordsToDisplay] = useState<string[]>([]);
   const [currentTestDuration, setCurrentTestDuration] = useState<number>(FINAL_EXAM_DURATION);
+  const [isAccuracyChallenge, setIsAccuracyChallenge] = useState<boolean>(false);
   
   const [view, setView] = useState<'dashboard' | 'exercise_selection' | 'test'>('dashboard');
 
@@ -69,20 +131,67 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     setSaveError(null);
     setActiveTestType(testType);
     setTypingTestKey(prevKey => prevKey + 1);
-    setView('test');
-
-    if (testType === 'exercise1') {
-      const phrase = getRandomPhrase(EXERCISE_1_PHRASES);
-      setWordsToDisplay(phrase.split(' '));
-      setCurrentTestDuration(EXERCISE_DURATION);
-    } else if (testType === 'exercise2') {
-      const phrase = getRandomPhrase(EXERCISE_2_PHRASES);
-      setWordsToDisplay(phrase.split(' ')); 
-      setCurrentTestDuration(EXERCISE_DURATION);
-    } else if (testType === 'final_exam') {
-      setWordsToDisplay(generateRandomWords(WORDS_TO_GENERATE_FINAL_EXAM, true));
-      setCurrentTestDuration(FINAL_EXAM_DURATION);
+    
+    let words: string[] = [];
+    let duration = 60;
+    let isAccuracy = false;
+    
+    switch (testType) {
+      case 'warmup_home_row':
+        words = getRandomPhrase(WARMUP_HOME_ROW).split(' ');
+        duration = 60;
+        break;
+      case 'warmup_alphabet':
+        words = getRandomPhrase(WARMUP_ALPHABET).split(' ');
+        duration = 90;
+        break;
+      case 'basic_simple_sentences':
+        words = getRandomPhrase(BASIC_SIMPLE_SENTENCES).split(' ');
+        duration = 60;
+        break;
+      case 'basic_common_words':
+        words = generateRandomWords(WORDS_TO_GENERATE);
+        duration = 60;
+        break;
+      case 'intermediate_complex_sentences':
+        words = getRandomPhrase(INTERMEDIATE_COMPLEX_SENTENCES).split(' ');
+        duration = 90;
+        break;
+      case 'intermediate_paragraph':
+        words = INTERMEDIATE_PARAGRAPH[0].split(' ');
+        duration = 120;
+        break;
+      case 'advanced_technical_vocab':
+        words = getRandomPhrase(ADVANCED_TECHNICAL_VOCAB).split(' ');
+        duration = 90;
+        break;
+      case 'advanced_special_chars':
+        words = getRandomPhrase(ADVANCED_SPECIAL_CHARS).split(' ');
+        duration = 90;
+        break;
+      case 'drill_timed_1_min':
+        words = generateRandomWords(WORDS_TO_GENERATE);
+        duration = 60;
+        break;
+      case 'drill_timed_3_min':
+        words = generateRandomWords(WORDS_TO_GENERATE * 3);
+        duration = 180;
+        break;
+      case 'drill_accuracy_challenge':
+        words = ACCURACY_CHALLENGE_TEXT[0].split(' ');
+        duration = 300; // Ample time, ends on error
+        isAccuracy = true;
+        break;
+      case 'final_exam':
+        words = generateRandomWords(WORDS_TO_GENERATE, true);
+        duration = FINAL_EXAM_DURATION;
+        break;
     }
+    
+    setWordsToDisplay(words);
+    setCurrentTestDuration(duration);
+    setIsAccuracyChallenge(isAccuracy);
+    setView('test');
   }, []);
 
   const handleTestComplete = useCallback((stats: TestStats) => {
@@ -113,23 +222,12 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
       if (error) {
         console.error('Error saving test results:', error);
         
-        let feedbackMessage = 'An issue occurred.'; // Default part of the message
+        let feedbackMessage = 'An issue occurred.';
         if (typeof error.message === 'string' && error.message.trim() !== '') {
           feedbackMessage = error.message;
-        } else if (typeof error.details === 'string' && error.details.trim() !== '') {
-          feedbackMessage = error.details;
-        } else if (typeof error.hint === 'string' && error.hint.trim() !== '') {
-            feedbackMessage = error.hint;
-        } else {
-          try {
-            const errorString = JSON.stringify(error);
-            feedbackMessage = (errorString && errorString !== '{}') ? `Details: ${errorString}` : 'Unexpected error structure.';
-          } catch (stringifyError) {
-            feedbackMessage = 'Could not retrieve error details.';
-          }
         }
         
-        setSaveError(`Failed to save results: ${feedbackMessage}. Ensure 'test_results' table is updated (pass_status column added, others removed) and RLS is configured correctly.`);
+        setSaveError(`Failed to save results: ${feedbackMessage}. Ensure 'test_results' table and RLS are configured correctly.`);
         setIsResultsSubmitted(false);
       } else {
         setIsResultsSubmitted(true);
@@ -167,11 +265,8 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
   };
 
   useEffect(() => {
-    setActiveTestType(null);
-    setResults(null);
-    setSaveError(null);
-    setIsResultsSubmitted(false);
     setView('dashboard');
+    setResults(null);
   }, [userId]);
 
   const renderDashboard = () => (
@@ -195,24 +290,29 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
   );
 
   const renderExerciseSelection = () => (
-    <div className="w-full max-w-xl mx-auto mt-2 p-8 bg-lifewood-white rounded-lg shadow-xl border border-lifewood-dark-serpent border-opacity-10">
+    <div className="w-full max-w-3xl mx-auto mt-2 p-8 bg-lifewood-white rounded-lg shadow-xl border border-lifewood-dark-serpent border-opacity-10">
       <h2 className="text-3xl font-bold text-lifewood-castleton-green mb-8 text-center font-sans">Choose Your Exercise</h2>
-      <div className="space-y-6">
+      {EXERCISES_DATA.map(({ category, items }) => (
+        <div key={category} className="mb-8 last:mb-2">
+          <h3 className="text-xl font-semibold text-lifewood-dark-serpent mb-4 border-b-2 border-lifewood-saffaron pb-2">{category}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {items.map(exercise => (
+              <button
+                key={exercise.key}
+                onClick={() => prepareTest(exercise.key)}
+                className="p-4 bg-lifewood-sea-salt rounded-lg text-left hover:bg-lifewood-earth-yellow hover:bg-opacity-40 transition-all duration-200 border border-lifewood-dark-serpent border-opacity-10 shadow-sm hover:shadow-md"
+              >
+                <h4 className="font-bold text-lifewood-castleton-green">{exercise.title}</h4>
+                <p className="text-sm text-lifewood-dark-serpent opacity-80 mt-1">{exercise.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div className="text-center mt-8">
         <button
-          onClick={() => prepareTest('exercise1')}
-          className="w-full px-6 py-4 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-sffaron focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
-        >
-          Start Exercise 1
-        </button>
-        <button
-          onClick={() => prepareTest('exercise2')}
-          className="w-full px-6 py-4 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
-        >
-          Start Exercise 2
-        </button>
-         <button
           onClick={() => setView('dashboard')}
-          className="w-full px-6 py-3 bg-transparent text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-sea-salt transition-colors text-md border border-lifewood-dark-serpent border-opacity-30 mt-8"
+          className="px-6 py-3 bg-transparent text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-sea-salt transition-colors text-md border border-lifewood-dark-serpent border-opacity-30"
         >
           Back to Dashboard
         </button>
@@ -225,14 +325,11 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
       case 'dashboard':
         return 'Welcome! Choose an option below to get started.';
       case 'exercise_selection':
-        return 'Select a practice exercise.';
+        return 'Select a practice exercise to improve your skills.';
       case 'test':
-        switch(activeTestType) {
-          case 'exercise1': return 'Exercise 1: Practice typing a sentence.';
-          case 'exercise2': return 'Exercise 2: Practice typing numbers.';
-          case 'final_exam': return 'Final Exam: Test your typing speed and accuracy (1 min test).';
-          default: return 'Loading test...';
-        }
+        const exercise = EXERCISES_DATA.flatMap(c => c.items).find(i => i.key === activeTestType);
+        if (activeTestType === 'final_exam') return 'Final Exam: Test your typing speed and accuracy (1 min test).';
+        return exercise ? exercise.title : 'Loading test...';
       default:
         return 'Select an exercise or the final exam to begin.';
     }
@@ -266,11 +363,6 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
       {view === 'test' && activeTestType === 'final_exam' && <SpecialNote />} 
       
       <main className="w-full max-w-3xl mx-auto mt-0">
-        {(isSavingResults && !isResultsSubmitted && activeTestType === 'final_exam') && (
-          <div className="text-center p-4 my-4 bg-lifewood-sea-salt rounded-md border border-lifewood-saffaron">
-            <p className="text-lifewood-castleton-green font-sans">Submitting results...</p>
-          </div>
-        )}
         {saveError && (
           <div className="text-center p-4 my-4 bg-red-100 text-red-700 border border-red-500 rounded-md">
             <p role="alert" className="font-sans">{saveError}</p>
@@ -289,13 +381,14 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
                   initialWords={wordsToDisplay}
                   testDurationSeconds={currentTestDuration}
                   onTestComplete={handleTestComplete}
+                  isAccuracyChallenge={isAccuracyChallenge}
                 />
                 <div className="mt-6 text-center">
                   <button
-                    onClick={handleRestartOrChangeTest}
+                    onClick={() => { setResults(null); setView('exercise_selection'); }}
                     className="px-6 py-3 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-md shadow-sm"
                   >
-                    Back to Dashboard
+                    Back to Exercises
                   </button>
                 </div>
               </>
@@ -309,6 +402,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
                 isSavingResults={isSavingResults}
                 isResultsSubmitted={isResultsSubmitted}
                 isFinalExam={activeTestType === 'final_exam'} 
+                isAccuracyChallenge={isAccuracyChallenge}
               />
             )}
           </>

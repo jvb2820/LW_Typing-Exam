@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TestStatus, CharDisplayState, TestStats } from '../types';
 import Keyboard from './Keyboard';
@@ -7,12 +8,14 @@ interface TypingTestProps {
   initialWords: string[];
   testDurationSeconds: number;
   onTestComplete: (stats: TestStats) => void;
+  isAccuracyChallenge?: boolean;
 }
 
 const TypingTest: React.FC<TypingTestProps> = ({ 
   initialWords,
   testDurationSeconds, 
   onTestComplete,
+  isAccuracyChallenge = false,
 }) => {
   const [words, setWords] = useState<string[]>(initialWords); 
   const [displayableWords, setDisplayableWords] = useState<CharDisplayState[][]>([]);
@@ -207,11 +210,17 @@ const TypingTest: React.FC<TypingTestProps> = ({
     if (testStatus !== TestStatus.RUNNING && !shouldStartTest) return;
 
     if (key === 'Backspace') {
+      if (isAccuracyChallenge) return; // Disallow backspace in accuracy challenge
       setCurrentTypedValue(prev => prev.slice(0, -1));
     } else if (key === ' ') {
       if (currentTypedValue.length > 0 || (words[currentWordIndex] && words[currentWordIndex].length === 0)) {
         const targetWord = words[currentWordIndex];
         if (!targetWord && targetWord !== "") return; 
+
+        if (isAccuracyChallenge && currentTypedValue !== targetWord) {
+          setTestStatus(TestStatus.FINISHED);
+          return;
+        }
 
         let wordCharCorrect = 0;
         let wordCharIncorrect = 0;
@@ -278,6 +287,16 @@ const TypingTest: React.FC<TypingTestProps> = ({
         }
       }
     } else if (key.length === 1) { 
+        if (isAccuracyChallenge) {
+          const targetWord = words[currentWordIndex];
+          const nextCharIndex = currentTypedValue.length;
+          if (nextCharIndex >= targetWord.length || key !== targetWord[nextCharIndex]) {
+            // Add the wrong character so it's reflected in the final stats, then end.
+            setCurrentTypedValue(prev => prev + key);
+            setTestStatus(TestStatus.FINISHED);
+            return;
+          }
+        }
       const currentTargetWordLength = words[currentWordIndex] ? words[currentWordIndex].length : 0;
       if (currentTypedValue.length < currentTargetWordLength + 10) { 
          setCurrentTypedValue(prev => prev + key);
@@ -360,7 +379,7 @@ const TypingTest: React.FC<TypingTestProps> = ({
       </div>
       <Keyboard 
         onKeyPress={handleVirtualKeyPress}
-        disabled={testStatus === TestStatus.FINISHED}
+        disabled={testStatus === TestStatus.FINISHED || isAccuracyChallenge}
         physicalKeyPressed={physicalKeyPressed}
       />
     </div>

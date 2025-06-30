@@ -1,4 +1,5 @@
 
+
 export enum TestStatus {
   IDLE = 'idle',
   RUNNING = 'running',
@@ -21,4 +22,18 @@ export interface TestStats {
 }
 
 // New type to distinguish between different tests
-export type ActiveTestType = 'exercise1' | 'exercise2' | 'final_exam' | null;
+export type ExerciseKey =
+  | 'warmup_home_row'
+  | 'warmup_alphabet'
+  | 'basic_simple_sentences'
+  | 'basic_common_words'
+  | 'intermediate_complex_sentences'
+  | 'intermediate_paragraph'
+  | 'advanced_technical_vocab'
+  | 'advanced_special_chars'
+  | 'drill_timed_1_min'
+  | 'drill_timed_3_min'
+  | 'drill_accuracy_challenge'
+  | 'final_exam';
+
+export type ActiveTestType = ExerciseKey | null;

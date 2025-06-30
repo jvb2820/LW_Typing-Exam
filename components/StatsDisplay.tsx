@@ -9,6 +9,7 @@ interface StatsDisplayProps {
   isSavingResults: boolean;
   isResultsSubmitted: boolean;
   isFinalExam: boolean;
+  isAccuracyChallenge: boolean;
 }
 
 const StatsDisplay: React.FC<StatsDisplayProps> = ({ 
@@ -17,19 +18,45 @@ const StatsDisplay: React.FC<StatsDisplayProps> = ({
   onSubmitResults,
   isSavingResults,
   isResultsSubmitted,
-  isFinalExam
+  isFinalExam,
+  isAccuracyChallenge
 }) => {
   const isPass = isFinalExam && stats.wpm >= 25 && stats.accuracy >= 90 && stats.trueAccuracy >= 85;
+  const isAccuracyPass = isAccuracyChallenge && stats.trueAccuracy >= 100;
+  
+  const getStatusContent = () => {
+    if (isFinalExam) {
+      return {
+        title: 'Overall Status',
+        label: isPass ? 'Pass' : 'Fail',
+        containerClass: isPass ? 'bg-lifewood-castleton-green bg-opacity-10 border-lifewood-castleton-green' : 'bg-red-100 border-red-500',
+        titleClass: isPass ? 'text-lifewood-castleton-green' : 'text-red-700',
+        labelClass: isPass ? 'text-lifewood-castleton-green' : 'text-red-600',
+      };
+    }
+    if (isAccuracyChallenge) {
+      return {
+        title: 'Accuracy Challenge',
+        label: isAccuracyPass ? 'Perfect!' : 'Challenge Failed',
+        containerClass: isAccuracyPass ? 'bg-lifewood-castleton-green bg-opacity-10 border-lifewood-castleton-green' : 'bg-red-100 border-red-500',
+        titleClass: isAccuracyPass ? 'text-lifewood-castleton-green' : 'text-red-700',
+        labelClass: isAccuracyPass ? 'text-lifewood-castleton-green' : 'text-red-600',
+      };
+    }
+    return null;
+  };
+
+  const statusContent = getStatusContent();
 
   return (
     <div className="mt-8 p-6 sm:p-8 bg-lifewood-white rounded-lg shadow-xl text-center border border-lifewood-dark-serpent border-opacity-10 font-sans">
       <h2 className="text-3xl font-bold text-lifewood-castleton-green mb-8">Test Results</h2>
       
-      {isFinalExam && (
-        <div className={`p-4 rounded-lg mb-6 ${isPass ? 'bg-lifewood-castleton-green bg-opacity-10 border-lifewood-castleton-green' : 'bg-red-100 border-red-500'} border`}>
-          <p className={`text-sm ${isPass ? 'text-lifewood-castleton-green' : 'text-red-700'} opacity-80`}>Overall Status</p>
-          <p className={`text-4xl font-bold ${isPass ? 'text-lifewood-castleton-green' : 'text-red-600'}`}>
-            {isPass ? 'Pass' : 'Fail'}
+      {statusContent && (
+        <div className={`p-4 rounded-lg mb-6 ${statusContent.containerClass} border`}>
+          <p className={`text-sm ${statusContent.titleClass} opacity-80`}>{statusContent.title}</p>
+          <p className={`text-4xl font-bold ${statusContent.labelClass}`}>
+            {statusContent.label}
           </p>
         </div>
       )}
