@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import TypingTest from './components/TypingTest';
 import StatsDisplay from './components/StatsDisplay';
@@ -45,7 +46,6 @@ const SpecialNote: React.FC = () => (
     <p className="text-sm mb-2">
       Passing Marks - WPM <strong className="text-red-600">25</strong>, Accuracy (Word-based) <strong className="text-red-600">90%</strong>, and True Accuracy (Character-based) <strong className="text-red-600">85%</strong>.
     </p>
-    {/* Retake logic paragraph removed as per previous request */}
   </div>
 );
 
@@ -60,6 +60,8 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
   
   const [wordsToDisplay, setWordsToDisplay] = useState<string[]>([]);
   const [currentTestDuration, setCurrentTestDuration] = useState<number>(FINAL_EXAM_DURATION);
+  
+  const [view, setView] = useState<'dashboard' | 'exercise_selection' | 'test'>('dashboard');
 
   const prepareTest = useCallback((testType: ActiveTestType) => {
     setResults(null);
@@ -67,6 +69,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     setSaveError(null);
     setActiveTestType(testType);
     setTypingTestKey(prevKey => prevKey + 1);
+    setView('test');
 
     if (testType === 'exercise1') {
       const phrase = getRandomPhrase(EXERCISE_1_PHRASES);
@@ -150,6 +153,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
         setActiveTestType(null); 
         setSaveError(null);
         setIsResultsSubmitted(false);
+        setView('dashboard');
     }
   }, [activeTestType, results, prepareTest]);
   
@@ -158,6 +162,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     setActiveTestType(null);
     setSaveError(null);
     setIsResultsSubmitted(false);
+    setView('dashboard');
     onSignOut();
   };
 
@@ -166,23 +171,18 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     setResults(null);
     setSaveError(null);
     setIsResultsSubmitted(false);
+    setView('dashboard');
   }, [userId]);
 
-  const renderExerciseSelection = () => (
+  const renderDashboard = () => (
     <div className="w-full max-w-xl mx-auto mt-2 p-8 bg-lifewood-white rounded-lg shadow-xl border border-lifewood-dark-serpent border-opacity-10">
-      <h2 className="text-3xl font-bold text-lifewood-castleton-green mb-8 text-center font-sans">Choose Your Challenge</h2>
+      <h2 className="text-3xl font-bold text-lifewood-castleton-green mb-8 text-center font-sans">Dashboard</h2>
       <div className="space-y-6">
         <button
-          onClick={() => prepareTest('exercise1')}
+          onClick={() => setView('exercise_selection')}
           className="w-full px-6 py-4 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
         >
-          Start Exercise 1
-        </button>
-        <button
-          onClick={() => prepareTest('exercise2')}
-          className="w-full px-6 py-4 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
-        >
-          Start Exercise 2
+          Practice Exercises
         </button>
         <button
           onClick={() => prepareTest('final_exam')}
@@ -194,6 +194,50 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     </div>
   );
 
+  const renderExerciseSelection = () => (
+    <div className="w-full max-w-xl mx-auto mt-2 p-8 bg-lifewood-white rounded-lg shadow-xl border border-lifewood-dark-serpent border-opacity-10">
+      <h2 className="text-3xl font-bold text-lifewood-castleton-green mb-8 text-center font-sans">Choose Your Exercise</h2>
+      <div className="space-y-6">
+        <button
+          onClick={() => prepareTest('exercise1')}
+          className="w-full px-6 py-4 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-sffaron focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
+        >
+          Start Exercise 1
+        </button>
+        <button
+          onClick={() => prepareTest('exercise2')}
+          className="w-full px-6 py-4 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
+        >
+          Start Exercise 2
+        </button>
+         <button
+          onClick={() => setView('dashboard')}
+          className="w-full px-6 py-3 bg-transparent text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-sea-salt transition-colors text-md border border-lifewood-dark-serpent border-opacity-30 mt-8"
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    </div>
+  );
+
+  const getSubtitle = () => {
+    switch(view) {
+      case 'dashboard':
+        return 'Welcome! Choose an option below to get started.';
+      case 'exercise_selection':
+        return 'Select a practice exercise.';
+      case 'test':
+        switch(activeTestType) {
+          case 'exercise1': return 'Exercise 1: Practice typing a sentence.';
+          case 'exercise2': return 'Exercise 2: Practice typing numbers.';
+          case 'final_exam': return 'Final Exam: Test your typing speed and accuracy (1 min test).';
+          default: return 'Loading test...';
+        }
+      default:
+        return 'Select an exercise or the final exam to begin.';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-lifewood-paper text-lifewood-dark-serpent flex flex-col items-center justify-center p-4 selection:bg-lifewood-saffaron selection:text-lifewood-dark-serpent">
       <header className="w-full max-w-3xl mx-auto mb-2 sm:mb-0">
@@ -203,10 +247,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
               Lifewood Typing Exam
             </h1>
             <p className="text-lifewood-dark-serpent opacity-80 text-sm sm:text-base font-sans">
-              {activeTestType === 'exercise1' && 'Exercise 1: Practice typing a sentence.'}
-              {activeTestType === 'exercise2' && 'Exercise 2: Practice typing numbers.'}
-              {activeTestType === 'final_exam' && 'Final Exam: Test your typing speed and accuracy (1 min test).'}
-              {!activeTestType && 'Select an exercise or the final exam to begin.'}
+              {getSubtitle()}
             </p>
           </div>
           <div className="text-right">
@@ -222,7 +263,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
         </div>
       </header>
       
-      {activeTestType === 'final_exam' && <SpecialNote />} 
+      {view === 'test' && activeTestType === 'final_exam' && <SpecialNote />} 
       
       <main className="w-full max-w-3xl mx-auto mt-0">
         {(isSavingResults && !isResultsSubmitted && activeTestType === 'final_exam') && (
@@ -236,39 +277,40 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
           </div>
         )}
 
-        {!activeTestType && renderExerciseSelection()}
+        {view === 'dashboard' && renderDashboard()}
+        {view === 'exercise_selection' && renderExerciseSelection()}
         
-        {activeTestType && !results && (
+        {view === 'test' && (
           <>
-            {/* SpecialNote for final_exam is rendered above main */}
-            <TypingTest
-              key={typingTestKey}
-              initialWords={wordsToDisplay}
-              testDurationSeconds={currentTestDuration}
-              onTestComplete={handleTestComplete}
-            />
-            <div className="mt-6 text-center">
-              <button
-                onClick={handleRestartOrChangeTest}
-                className="px-6 py-3 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-md shadow-sm"
-              >
-                Back to Menu
-              </button>
-            </div>
-          </>
-        )}
-        
-        {results && (
-          <>
-          {/* SpecialNote for final_exam is rendered above main */}
-          <StatsDisplay
-            stats={results}
-            onRestart={handleRestartOrChangeTest}
-            onSubmitResults={handleConfirmAndSaveResults}
-            isSavingResults={isSavingResults}
-            isResultsSubmitted={isResultsSubmitted}
-            isFinalExam={activeTestType === 'final_exam'} 
-          />
+            {!results && (
+              <>
+                <TypingTest
+                  key={typingTestKey}
+                  initialWords={wordsToDisplay}
+                  testDurationSeconds={currentTestDuration}
+                  onTestComplete={handleTestComplete}
+                />
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={handleRestartOrChangeTest}
+                    className="px-6 py-3 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-md shadow-sm"
+                  >
+                    Back to Dashboard
+                  </button>
+                </div>
+              </>
+            )}
+            
+            {results && (
+              <StatsDisplay
+                stats={results}
+                onRestart={handleRestartOrChangeTest}
+                onSubmitResults={handleConfirmAndSaveResults}
+                isSavingResults={isSavingResults}
+                isResultsSubmitted={isResultsSubmitted}
+                isFinalExam={activeTestType === 'final_exam'} 
+              />
+            )}
           </>
         )}
       </main>
