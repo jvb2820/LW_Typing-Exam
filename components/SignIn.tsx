@@ -1,3 +1,4 @@
+
 import React, { useState, FormEvent } from 'react';
 import { supabase } from '../supabaseClient'; // Import Supabase client
 
@@ -35,7 +36,7 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
           // User ID already exists, proceed to sign in
           onSignIn(trimmedUserId);
         } else {
-          console.error('Error processing User ID:', supaInsertError);
+          console.error('Error processing User ID:', supaInsertError.message, supaInsertError);
           setError(`Failed to process User ID: ${supaInsertError.message}. Ensure 'profiles' table is correctly set up.`);
           setIsLoading(false); 
         }

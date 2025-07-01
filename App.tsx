@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState, useCallback, useEffect } from 'react';
 import TypingTest from './components/TypingTest';
 import StatsDisplay from './components/StatsDisplay';
@@ -125,6 +122,63 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
   const [isAccuracyChallenge, setIsAccuracyChallenge] = useState<boolean>(false);
   
   const [view, setView] = useState<'dashboard' | 'exercise_selection' | 'test'>('dashboard');
+  const [completedExercises, setCompletedExercises] = useState<Set<ExerciseKey>>(new Set());
+  const [progressError, setProgressError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCompletedExercises = async () => {
+        if (!userId) return;
+        setProgressError(null);
+        try {
+            const { data, error } = await supabase
+                .from('completed_exercises')
+                .select('exercise_key')
+                .eq('user_id', userId);
+            
+            if (error) {
+                console.error("Error fetching completed exercises:", error.message, error);
+                setProgressError("Could not load practice progress. The database may be misconfigured.");
+                setCompletedExercises(new Set()); // Gracefully fail
+                return;
+            }
+            if (data) {
+                const completedKeys = data.map(item => item.exercise_key as ExerciseKey);
+                setCompletedExercises(new Set(completedKeys));
+            }
+        } catch (e) {
+            console.error("Exception fetching completed exercises:", e);
+            setProgressError("Could not load practice progress due to a network or application error.");
+            setCompletedExercises(new Set());
+        }
+    };
+    
+    fetchCompletedExercises();
+    setView('dashboard');
+    setResults(null);
+  }, [userId]);
+
+  const handleTestComplete = useCallback(async (stats: TestStats) => {
+    setResults(stats);
+    setProgressError(null);
+
+    if (activeTestType && activeTestType !== 'final_exam' && !completedExercises.has(activeTestType)) {
+      try {
+        const { error } = await supabase
+          .from('completed_exercises')
+          .insert([{ user_id: userId, exercise_key: activeTestType }]);
+        
+        if (error) {
+          console.error('Error saving exercise completion:', error.message, error);
+          setProgressError("Could not save your progress. The exercise might not be marked as complete.");
+        } else {
+          setCompletedExercises(prev => new Set(prev).add(activeTestType));
+        }
+      } catch (e) {
+        console.error('Exception saving exercise completion:', e);
+        setProgressError("Could not save your progress due to a network or application error.");
+      }
+    }
+  }, [activeTestType, userId, completedExercises]);
 
   const prepareTest = useCallback((testType: ActiveTestType) => {
     setResults(null);
@@ -195,10 +249,6 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     setView('test');
   }, []);
 
-  const handleTestComplete = useCallback((stats: TestStats) => {
-    setResults(stats);
-  }, []);
-
   const handleConfirmAndSaveResults = useCallback(async () => {
     if (!results || activeTestType !== 'final_exam') return; 
 
@@ -221,7 +271,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
         .insert([payload]);
 
       if (error) {
-        console.error('Error saving test results:', error);
+        console.error('Error saving test results:', error.message, error);
         
         let feedbackMessage = 'An issue occurred.';
         if (typeof error.message === 'string' && error.message.trim() !== '') {
@@ -264,49 +314,92 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     setView('dashboard');
     onSignOut();
   };
-
-  useEffect(() => {
-    setView('dashboard');
-    setResults(null);
-  }, [userId]);
-
-  const renderDashboard = () => (
-    <div className="w-full max-w-xl mx-auto mt-2 p-8 bg-lifewood-white rounded-lg shadow-xl border border-lifewood-dark-serpent border-opacity-10">
-      <h2 className="text-3xl font-bold text-lifewood-castleton-green mb-8 text-center font-sans">Dashboard</h2>
-      <div className="space-y-6">
-        <button
-          onClick={() => setView('exercise_selection')}
-          className="w-full px-6 py-4 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
-        >
-          Practice Exercises
-        </button>
-        <button
-          onClick={() => prepareTest('final_exam')}
-          className="w-full px-6 py-4 bg-lifewood-castleton-green text-lifewood-paper font-semibold rounded-lg hover:bg-opacity-80 transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-castleton-green focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
-        >
-          Start Final Exam (1 min)
-        </button>
-      </div>
+  
+  const ProgressErrorDisplay: React.FC = () => progressError ? (
+    <div className="w-full max-w-3xl mx-auto my-4 p-3 bg-red-100 text-red-800 border border-red-300 rounded-lg text-center font-sans shadow-sm">
+      <p role="alert" className="text-sm font-medium">{progressError}</p>
     </div>
-  );
+  ) : null;
+
+  const renderDashboard = () => {
+    const totalPracticeExercises = EXERCISES_DATA.flatMap(cat => cat.items).length;
+    const completedCount = completedExercises.size;
+    const progressPercentage = totalPracticeExercises > 0 ? (completedCount / totalPracticeExercises) * 100 : 0;
+
+    return (
+      <div className="w-full max-w-xl mx-auto mt-2 p-8 bg-lifewood-white rounded-lg shadow-xl border border-lifewood-dark-serpent border-opacity-10">
+        <h2 className="text-3xl font-bold text-lifewood-castleton-green mb-8 text-center font-sans">Dashboard</h2>
+        
+        <ProgressErrorDisplay />
+
+        <div className="mb-10">
+            <div className="flex justify-between items-center mb-2">
+                <h3 id="progress-label" className="text-lg font-semibold text-lifewood-dark-serpent font-sans">Practice Progress</h3>
+                <span className="text-sm font-medium text-lifewood-castleton-green font-sans">{`${completedCount} / ${totalPracticeExercises}`}</span>
+            </div>
+            <div className="w-full bg-lifewood-sea-salt rounded-full h-4 border border-lifewood-dark-serpent border-opacity-10 shadow-inner">
+                <div
+                    className="bg-lifewood-saffaron h-full rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${progressPercentage}%` }}
+                    role="progressbar"
+                    aria-valuenow={progressPercentage}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-labelledby="progress-label"
+                ></div>
+            </div>
+             <p className="text-right text-xs text-lifewood-dark-serpent opacity-80 mt-1 font-mono">{progressPercentage.toFixed(0)}% Complete</p>
+        </div>
+
+        <div className="space-y-6">
+          <button
+            onClick={() => setView('exercise_selection')}
+            className="w-full px-6 py-4 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
+          >
+            Practice Exercises
+          </button>
+          <button
+            onClick={() => prepareTest('final_exam')}
+            className="w-full px-6 py-4 bg-lifewood-castleton-green text-lifewood-paper font-semibold rounded-lg hover:bg-opacity-80 transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-castleton-green focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
+          >
+            Start Final Exam (1 min)
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const renderExerciseSelection = () => (
     <div className="w-full max-w-3xl mx-auto mt-2 p-8 bg-lifewood-white rounded-lg shadow-xl border border-lifewood-dark-serpent border-opacity-10">
       <h2 className="text-3xl font-bold text-lifewood-castleton-green mb-8 text-center font-sans">Choose Your Exercise</h2>
+      
+      <ProgressErrorDisplay />
+      
       {EXERCISES_DATA.map(({ category, items }) => (
         <div key={category} className="mb-8 last:mb-2">
           <h3 className="text-xl font-semibold text-lifewood-dark-serpent mb-4 border-b-2 border-lifewood-saffaron pb-2">{category}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {items.map(exercise => (
+            {items.map(exercise => {
+              const isCompleted = completedExercises.has(exercise.key);
+              return (
               <button
                 key={exercise.key}
                 onClick={() => prepareTest(exercise.key)}
-                className="p-4 bg-lifewood-sea-salt rounded-lg text-left hover:bg-lifewood-earth-yellow hover:bg-opacity-40 transition-all duration-200 border border-lifewood-dark-serpent border-opacity-10 shadow-sm hover:shadow-md"
+                className={`p-4 rounded-lg text-left transition-all duration-200 border border-lifewood-dark-serpent border-opacity-10 shadow-sm hover:shadow-md ${
+                  isCompleted 
+                    ? 'bg-lifewood-castleton-green bg-opacity-10 hover:bg-lifewood-castleton-green hover:bg-opacity-20' 
+                    : 'bg-lifewood-sea-salt hover:bg-lifewood-earth-yellow hover:bg-opacity-40'
+                }`}
               >
-                <h4 className="font-bold text-lifewood-castleton-green">{exercise.title}</h4>
+                <div className="flex justify-between items-start">
+                  <h4 className="font-bold text-lifewood-castleton-green pr-2">{exercise.title}</h4>
+                  {isCompleted && (
+                    <span className="text-lifewood-castleton-green font-bold text-xl" title="Completed">✓</span>
+                  )}
+                </div>
                 <p className="text-sm text-lifewood-dark-serpent opacity-80 mt-1">{exercise.description}</p>
               </button>
-            ))}
+            )})}
           </div>
         </div>
       ))}
