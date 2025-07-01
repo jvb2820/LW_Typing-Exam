@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+
+import React, { useState, useCallback, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import SignIn from './components/SignIn'; // New component for sign-in
@@ -13,6 +14,20 @@ const RootApp: React.FC = () => {
     // Optional: Persist User ID in localStorage for convenience
     return localStorage.getItem('currentUserId');
   });
+
+  // Effect to disable the right-click context menu application-wide
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+
+    // Cleanup the event listener when the component unmounts
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleSignIn = useCallback((userId: string) => {
     localStorage.setItem('currentUserId', userId);
