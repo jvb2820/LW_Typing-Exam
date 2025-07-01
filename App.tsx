@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import TypingTest from './components/TypingTest';
 import StatsDisplay from './components/StatsDisplay';
@@ -325,6 +326,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     const totalPracticeExercises = EXERCISES_DATA.flatMap(cat => cat.items).length;
     const completedCount = completedExercises.size;
     const progressPercentage = totalPracticeExercises > 0 ? (completedCount / totalPracticeExercises) * 100 : 0;
+    const areAllPracticeExercisesCompleted = completedCount >= totalPracticeExercises;
 
     return (
       <div className="w-full max-w-xl mx-auto mt-2 p-8 bg-lifewood-white rounded-lg shadow-xl border border-lifewood-dark-serpent border-opacity-10">
@@ -358,12 +360,30 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
           >
             Practice Exercises
           </button>
-          <button
-            onClick={() => prepareTest('final_exam')}
-            className="w-full px-6 py-4 bg-lifewood-castleton-green text-lifewood-paper font-semibold rounded-lg hover:bg-opacity-80 transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-castleton-green focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
-          >
-            Start Final Exam (1 min)
-          </button>
+          <div className="relative group">
+            <button
+              onClick={() => prepareTest('final_exam')}
+              disabled={!areAllPracticeExercisesCompleted}
+              className={`w-full px-6 py-4 flex items-center justify-center text-lg font-semibold rounded-lg transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans ${
+                  !areAllPracticeExercisesCompleted
+                  ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
+                  : 'bg-lifewood-castleton-green text-lifewood-paper hover:bg-opacity-80 focus:ring-lifewood-castleton-green'
+              }`}
+              aria-describedby={!areAllPracticeExercisesCompleted ? 'final-exam-tooltip' : undefined}
+            >
+              {!areAllPracticeExercisesCompleted && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+              )}
+              Start Final Exam (1 min)
+            </button>
+            {!areAllPracticeExercisesCompleted && (
+                <div id="final-exam-tooltip" role="tooltip" className="absolute bottom-full mb-2 w-max max-w-full left-1/2 -translate-x-1/2 px-3 py-1.5 bg-lifewood-dark-serpent text-lifewood-paper text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                Complete all practice exercises to unlock.
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
