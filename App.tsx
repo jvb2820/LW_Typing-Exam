@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import TypingTest from './components/TypingTest';
 import StatsDisplay from './components/StatsDisplay';
@@ -385,10 +386,13 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
                 />
                 <div className="mt-6 text-center">
                   <button
-                    onClick={() => { setResults(null); setView('exercise_selection'); }}
+                    onClick={() => {
+                      setResults(null);
+                      setView(activeTestType === 'final_exam' ? 'dashboard' : 'exercise_selection');
+                    }}
                     className="px-6 py-3 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-md shadow-sm"
                   >
-                    Back to Exercises
+                    {activeTestType === 'final_exam' ? 'Back to Dashboard' : 'Back to Exercises'}
                   </button>
                 </div>
               </>
