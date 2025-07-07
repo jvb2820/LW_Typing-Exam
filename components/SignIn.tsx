@@ -6,17 +6,39 @@ interface SignInProps {
   onSignIn: (userId: string) => void;
 }
 
+const USER_ID_PREFIXES = [
+  'PHBYUGH',
+  'PHBYUNG',
+  'PHBYUZA',
+  'PHLG',
+  'PHCB',
+  'PHCBIT',
+  'PHBYU',
+  'PHCEC',
+  'PHBYUMG',
+  'PHBYUCG',
+  'PHCITU',
+];
+
 const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
-  const [userIdInput, setUserIdInput] = useState<string>('');
+  const [prefix, setPrefix] = useState<string>(USER_ID_PREFIXES[0]);
+  const [numberPart, setNumberPart] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const handleNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    // Allow only numbers by stripping non-digit characters
+    const numericValue = value.replace(/[^0-9]/g, '');
+    setNumberPart(numericValue);
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmedUserId = userIdInput.trim();
+    const trimmedUserId = `${prefix}${numberPart}`.trim().toUpperCase();
 
-    if (!trimmedUserId) {
-      setError('User ID cannot be empty.');
+    if (!numberPart) {
+      setError('User ID number cannot be empty.');
       return;
     }
     setError('');
@@ -49,9 +71,6 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
       setError('An unexpected error occurred. Please try again.');
       setIsLoading(false); 
     }
-    // Do not set isLoading to false here if onSignIn is called, 
-    // as the component will unmount or transition.
-    // It's set to false only on error paths where the component remains.
   };
 
   return (
@@ -68,18 +87,32 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
             <label htmlFor="userId" className="block text-sm font-medium text-lifewood-dark-serpent opacity-90 mb-1">
               User ID
             </label>
-            <input
-              type="text"
-              id="userId"
-              name="userId"
-              value={userIdInput}
-              onChange={(e) => setUserIdInput(e.target.value)}
-              className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
-              placeholder="Enter your User ID"
-              aria-describedby={error ? "userId-error" : undefined}
-              autoFocus
-              disabled={isLoading}
-            />
+            <div className="flex items-center">
+              <select
+                id="userIdPrefix"
+                name="userIdPrefix"
+                value={prefix}
+                onChange={(e) => setPrefix(e.target.value)}
+                className="h-full z-10 pl-4 pr-10 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-l-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron text-lifewood-dark-serpent font-semibold"
+                disabled={isLoading}
+              >
+                {USER_ID_PREFIXES.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <input
+                type="text"
+                id="userId"
+                name="userId"
+                value={numberPart}
+                onChange={handleNumberChange}
+                pattern="[0-9]*"
+                inputMode="numeric"
+                className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-l-0 border-lifewood-dark-serpent border-opacity-20 rounded-r-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent -ml-px"
+                placeholder="Enter your number"
+                aria-describedby={error ? "userId-error" : undefined}
+                autoFocus
+                disabled={isLoading}
+              />
+            </div>
             {error && (
               <p id="userId-error" className="mt-2 text-sm text-red-600" role="alert">
                 {error}
