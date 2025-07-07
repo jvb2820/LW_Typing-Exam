@@ -6,49 +6,35 @@ interface SignInProps {
   onSignIn: (userId: string) => void;
 }
 
-const USER_ID_PREFIXES = [
-  'PHBYUGH', 'PHBYUNG', 'PHBYUZA', 'PHLG', 'PHCB', 'PHCBIT', 'PHBYU', 'PHCEC'
-];
-
 const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
-  const [selectedPrefix, setSelectedPrefix] = useState<string>(USER_ID_PREFIXES[0]);
-  const [userIdNumberInput, setUserIdNumberInput] = useState<string>('');
+  const [userIdInput, setUserIdInput] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Only allow numbers
-    if (/^[0-9]*$/.test(value)) {
-      setUserIdNumberInput(value);
-    }
-  };
-  
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmedNumber = userIdNumberInput.trim();
+    const trimmedUserId = userIdInput.trim();
 
-    if (!trimmedNumber) {
-      setError('Please enter your number.');
+    if (!trimmedUserId) {
+      setError('User ID cannot be empty.');
       return;
     }
     setError('');
     setIsLoading(true);
 
-    const fullUserId = selectedPrefix + trimmedNumber;
     let supaInsertError: any = null; 
 
     try {
       const { error: dbError } = await supabase
         .from('profiles')
-        .insert([{ user_id: fullUserId }]);
+        .insert([{ user_id: trimmedUserId }]);
       
       supaInsertError = dbError; 
 
       if (supaInsertError) {
         if (supaInsertError.code === '23505') {
           // User ID already exists, proceed to sign in
-          onSignIn(fullUserId);
+          onSignIn(trimmedUserId);
         } else {
           console.error('Error processing User ID:', supaInsertError.message, supaInsertError);
           setError(`Failed to process User ID: ${supaInsertError.message}. Ensure 'profiles' table is correctly set up.`);
@@ -56,7 +42,7 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
         }
       } else {
         // New User ID successfully inserted
-        onSignIn(fullUserId);
+        onSignIn(trimmedUserId);
       }
     } catch (e: any) {
       console.error('Sign-in error:', e);
@@ -78,48 +64,22 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
           Please enter your User ID to continue.
         </p>
         <form onSubmit={handleSubmit} noValidate>
-          <div className="mb-6">
-            <label htmlFor="userPrefix" className="block text-sm font-medium text-lifewood-dark-serpent opacity-90 mb-1">
+          <div>
+            <label htmlFor="userId" className="block text-sm font-medium text-lifewood-dark-serpent opacity-90 mb-1">
               User ID
             </label>
-            <div className="flex">
-                <div className="relative">
-                    <select
-                        id="userPrefix"
-                        name="userPrefix"
-                        value={selectedPrefix}
-                        onChange={(e) => setSelectedPrefix(e.target.value)}
-                        disabled={isLoading}
-                        className="appearance-none z-10 block pl-3 pr-10 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-l-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron text-lifewood-dark-serpent focus:outline-none"
-                        aria-label="User ID Prefix"
-                    >
-                        {USER_ID_PREFIXES.map((prefix) => (
-                            <option key={prefix} value={prefix}>
-                            {prefix}
-                            </option>
-                        ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-lifewood-dark-serpent">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 8l4 4 4-4" />
-                        </svg>
-                    </div>
-                </div>
-                <input
-                    type="text"
-                    id="userId"
-                    name="userId"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={userIdNumberInput}
-                    onChange={handleNumberChange}
-                    className="relative w-full px-4 py-2.5 bg-lifewood-white border border-lifewood-dark-serpent border-opacity-20 rounded-r-md -ml-px focus:z-10 focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
-                    placeholder=" "
-                    aria-describedby={error ? "userId-error" : undefined}
-                    autoFocus
-                    disabled={isLoading}
-                />
-            </div>
+            <input
+              type="text"
+              id="userId"
+              name="userId"
+              value={userIdInput}
+              onChange={(e) => setUserIdInput(e.target.value)}
+              className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
+              placeholder="Enter your User ID"
+              aria-describedby={error ? "userId-error" : undefined}
+              autoFocus
+              disabled={isLoading}
+            />
             {error && (
               <p id="userId-error" className="mt-2 text-sm text-red-600" role="alert">
                 {error}
@@ -128,10 +88,10 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
           </div>
           <button
             type="submit"
-            className={`w-full px-4 py-3 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-md hover:bg-lifewood-earth-yellow transition-colors focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron focus:ring-offset-2 focus:ring-offset-lifewood-white ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`w-full mt-8 px-4 py-3 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-md hover:bg-lifewood-earth-yellow transition-colors focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron focus:ring-offset-2 focus:ring-offset-lifewood-white ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
             disabled={isLoading}
           >
-            {isLoading ? 'Logging In...' : 'Login'}
+            {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
       </div>
