@@ -16,8 +16,7 @@ const USER_ID_PREFIXES = [
   'PHBYU',
   'PHCEC',
   'PHBYUMG',
-  'PHBYUCG',
-  'PHCITU',
+  'PHBYUCG'
 ];
 
 const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
@@ -28,17 +27,19 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
 
   const handleNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    // Allow only numbers by stripping non-digit characters
+    // Allow only numbers and limit to 4 digits
     const numericValue = value.replace(/[^0-9]/g, '');
-    setNumberPart(numericValue);
+    if (numericValue.length <= 4) {
+      setNumberPart(numericValue);
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedUserId = `${prefix}${numberPart}`.trim().toUpperCase();
 
-    if (!numberPart) {
-      setError('User ID number cannot be empty.');
+    if (numberPart.length !== 4) {
+      setError('User ID number must be exactly 4 digits.');
       return;
     }
     setError('');
@@ -104,10 +105,11 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
                 name="userId"
                 value={numberPart}
                 onChange={handleNumberChange}
-                pattern="[0-9]*"
+                pattern="[0-9]{4}"
+                maxLength={4}
                 inputMode="numeric"
                 className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-l-0 border-lifewood-dark-serpent border-opacity-20 rounded-r-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent -ml-px"
-                placeholder="Enter your number"
+                placeholder="Enter 4 digits"
                 aria-describedby={error ? "userId-error" : undefined}
                 autoFocus
                 disabled={isLoading}
