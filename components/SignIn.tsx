@@ -38,8 +38,8 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
     event.preventDefault();
     const trimmedUserId = `${prefix}${numberPart}`.trim().toUpperCase();
 
-    if (numberPart.length !== 4) {
-      setError('User ID number must be exactly 4 digits.');
+    if (numberPart.length < 3 || numberPart.length > 4) {
+      setError('User ID number must be 3 or 4 digits.');
       return;
     }
     setError('');
@@ -105,11 +105,11 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn }) => {
                 name="userId"
                 value={numberPart}
                 onChange={handleNumberChange}
-                pattern="[0-9]{4}"
+                pattern="[0-9]{3,4}"
                 maxLength={4}
                 inputMode="numeric"
                 className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-l-0 border-lifewood-dark-serpent border-opacity-20 rounded-r-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent -ml-px"
-                placeholder="Enter 4 digits"
+                placeholder="Enter 3 or 4 digits"
                 aria-describedby={error ? "userId-error" : undefined}
                 autoFocus
                 disabled={isLoading}
