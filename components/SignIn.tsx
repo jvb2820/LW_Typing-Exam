@@ -115,7 +115,7 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
-                    placeholder="admin"
+                    placeholder=" "
                     autoFocus
                     disabled={isAdminLoading}
                   />
@@ -131,7 +131,7 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
-                    placeholder="••••••••••••"
+                    placeholder=" "
                     disabled={isAdminLoading}
                   />
               </div>
