@@ -3,6 +3,20 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, TestResult } from '../types';
 
+const USER_ID_PREFIXES = [
+  'All Users',
+  'PHBYUGH',
+  'PHBYUNG',
+  'PHBYUZA',
+  'PHLG',
+  'PHCB',
+  'PHCBIT',
+  'PHBYU',
+  'PHCEC',
+  'PHBYUMG',
+  'PHBYUCG'
+];
+
 const LoaderIcon: React.FC = () => (
     <div className="flex justify-center items-center h-full">
         <svg className="animate-spin h-8 w-8 text-lifewood-saffaron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -19,8 +33,8 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [profilesFilter, setProfilesFilter] = useState('');
-    const [resultsFilter, setResultsFilter] = useState('');
+    const [profilesFilter, setProfilesFilter] = useState('All Users');
+    const [resultsFilter, setResultsFilter] = useState('All Users');
 
     const fetchData = useCallback(async (isRefresh = false) => {
         if (!isRefresh) setLoading(true);
@@ -49,25 +63,32 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
     }, [fetchData]);
 
     const filteredProfiles = useMemo(() =>
-        profiles.filter(p => p.user_id.toLowerCase().includes(profilesFilter.toLowerCase())),
+        profilesFilter === 'All Users'
+            ? profiles
+            : profiles.filter(p => p.user_id.startsWith(profilesFilter)),
         [profiles, profilesFilter]
     );
 
     const filteredResults = useMemo(() =>
-        testResults.filter(r => r.user_id.toLowerCase().includes(resultsFilter.toLowerCase())),
+        resultsFilter === 'All Users'
+            ? testResults
+            : testResults.filter(r => r.user_id.startsWith(resultsFilter)),
         [testResults, resultsFilter]
     );
 
-    const renderTable = (headers: string[], data: any[], filterValue: string, setFilter: (val: string) => void) => (
+    const renderTable = (headers: string[], data: any[], filterValue: string, setFilter: (val: string) => void, prefixes: string[]) => (
         <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            <div className="p-4 border-b border-gray-700">
-                <input
-                    type="text"
-                    placeholder="Filter by User ID..."
+            <div className="p-4 border-b border-gray-700 flex items-center space-x-4">
+                 <label htmlFor="user-filter" className="text-gray-400 font-medium text-sm">Filter by User Prefix:</label>
+                <select
+                    id="user-filter"
                     value={filterValue}
                     onChange={e => setFilter(e.target.value)}
-                    className="w-full sm:w-1/2 md:w-1/3 px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron"
-                />
+                    className="admin-select w-full sm:w-1/2 md:w-1/3 px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron"
+                    aria-label="Filter by User ID Prefix"
+                >
+                    {prefixes.map(id => <option key={id} value={id}>{id}</option>)}
+                </select>
             </div>
             <div className="overflow-x-auto custom-scrollbar">
                 <table className="min-w-full divide-y divide-gray-700">
@@ -82,8 +103,8 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
                     </thead>
                     <tbody className="bg-gray-900 divide-y divide-gray-700">
                         {data.length === 0 ? (
-                            <tr><td colSpan={headers.length} className="text-center py-8 text-gray-500">No records found.</td></tr>
-                        ) : data.map((item, index) => (
+                            <tr><td colSpan={headers.length} className="text-center py-8 text-gray-500">No records found for the selected filter.</td></tr>
+                        ) : data.map((item) => (
                             <tr key={item.id || item.user_id} className="hover:bg-gray-800 transition-colors">
                                 {Object.keys(item).map(key => (
                                     <td key={key} className="px-6 py-4 whitespace-nowrap text-sm font-mono">
@@ -92,7 +113,7 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
                                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item[key] ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
                                              {item[key] ? 'PASS' : 'FAIL'}
                                          </span>
-                                         : item[key]}
+                                         : String(item[key])}
                                     </td>
                                 ))}
                             </tr>
@@ -144,8 +165,8 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
                     </div>
                 ) : (
                     <div>
-                        {activeTab === 'profiles' && renderTable(['User ID', 'Created At'], filteredProfiles.map(p => ({user_id: p.user_id, created_at: p.created_at})), profilesFilter, setProfilesFilter)}
-                        {activeTab === 'results' && renderTable(['ID', 'Created At', 'User ID', 'WPM', 'Accuracy', 'True Accuracy', 'Pass Status'], filteredResults, resultsFilter, setResultsFilter)}
+                        {activeTab === 'profiles' && renderTable(['User ID', 'Created At'], filteredProfiles.map(p => ({user_id: p.user_id, created_at: p.created_at})), profilesFilter, setProfilesFilter, USER_ID_PREFIXES)}
+                        {activeTab === 'results' && renderTable(['ID', 'Created At', 'User ID', 'WPM', 'Accuracy', 'True Accuracy', 'Pass Status'], filteredResults, resultsFilter, setResultsFilter, USER_ID_PREFIXES)}
                     </div>
                 )}
             </main>
