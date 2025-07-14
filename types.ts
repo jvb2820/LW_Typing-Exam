@@ -21,6 +21,22 @@ export interface TestStats {
   // skippedWords is removed
 }
 
+// Interfaces for data fetched for the admin dashboard
+export interface Profile {
+  user_id: string;
+  created_at: string;
+}
+
+export interface TestResult {
+  id: number;
+  created_at: string;
+  user_id: string;
+  wpm: number;
+  accuracy: number;
+  true_accuracy: number;
+  pass_status: boolean;
+}
+
 // New type to distinguish between different tests
 export type ExerciseKey =
   | 'warmup_home_row'

@@ -2,7 +2,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import SignIn from './components/SignIn'; // New component for sign-in
+import SignIn from './components/SignIn'; // Component for user/admin sign-in
+import AdminDashboard from './components/AdminDashboard'; // New admin dashboard component
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -11,9 +12,9 @@ if (!rootElement) {
 
 const RootApp: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
-    // Optional: Persist User ID in localStorage for convenience
     return localStorage.getItem('currentUserId');
   });
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => sessionStorage.getItem('isAdmin') === 'true');
 
   // Effect to disable the right-click context menu application-wide
   useEffect(() => {
@@ -33,14 +34,28 @@ const RootApp: React.FC = () => {
     localStorage.setItem('currentUserId', userId);
     setCurrentUserId(userId);
   }, []);
+  
+  const handleAdminSignIn = useCallback(() => {
+    sessionStorage.setItem('isAdmin', 'true');
+    setIsAdmin(true);
+  }, []);
 
   const handleSignOut = useCallback(() => {
     localStorage.removeItem('currentUserId');
     setCurrentUserId(null);
   }, []);
+  
+  const handleAdminSignOut = useCallback(() => {
+    sessionStorage.removeItem('isAdmin');
+    setIsAdmin(false);
+  }, []);
+
+  if (isAdmin) {
+    return <AdminDashboard onSignOut={handleAdminSignOut} />;
+  }
 
   if (!currentUserId) {
-    return <SignIn onSignIn={handleSignIn} />;
+    return <SignIn onSignIn={handleSignIn} onAdminSignIn={handleAdminSignIn} />;
   }
 
   return <App userId={currentUserId} onSignOut={handleSignOut} />;
