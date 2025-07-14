@@ -26,6 +26,44 @@ const LoaderIcon: React.FC = () => (
     </div>
 );
 
+const exportToCsv = (filename: string, rows: object[]) => {
+    if (!rows || rows.length === 0) {
+        alert("No data to export for the current filter.");
+        return;
+    }
+
+    const headers = Object.keys(rows[0]);
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => 
+            headers.map(header => {
+                let cellValue = (row as any)[header];
+                if (cellValue === null || cellValue === undefined) {
+                    return '';
+                }
+                let cell = String(cellValue);
+                // Escape quotes and wrap in quotes if it contains comma, double-quote, or newline
+                if (cell.search(/("|,|\n)/g) >= 0) {
+                    cell = `"${cell.replace(/"/g, '""')}"`;
+                }
+                return cell;
+            }).join(',')
+        )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
+
+
 const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
     const [activeTab, setActiveTab] = useState<'profiles' | 'results'>('profiles');
     const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -75,20 +113,44 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
             : testResults.filter(r => r.user_id.startsWith(resultsFilter)),
         [testResults, resultsFilter]
     );
+    
+    const handleExport = useCallback(() => {
+        const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        if (activeTab === 'profiles') {
+            const filename = `profiles-${profilesFilter}-${timestamp}.csv`;
+            const dataToExport = filteredProfiles.map(p => ({ user_id: p.user_id, created_at: p.created_at }));
+            exportToCsv(filename, dataToExport);
+        } else { // 'results'
+            const filename = `test-results-${resultsFilter}-${timestamp}.csv`;
+            exportToCsv(filename, filteredResults);
+        }
+    }, [activeTab, filteredProfiles, filteredResults, profilesFilter, resultsFilter]);
 
     const renderTable = (headers: string[], data: any[], filterValue: string, setFilter: (val: string) => void, prefixes: string[]) => (
         <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            <div className="p-4 border-b border-gray-700 flex items-center space-x-4">
-                 <label htmlFor="user-filter" className="text-gray-400 font-medium text-sm">Filter by User Prefix:</label>
-                <select
-                    id="user-filter"
-                    value={filterValue}
-                    onChange={e => setFilter(e.target.value)}
-                    className="admin-select w-full sm:w-1/2 md:w-1/3 px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron"
-                    aria-label="Filter by User ID Prefix"
+            <div className="p-4 border-b border-gray-700 flex flex-wrap items-center justify-between gap-4">
+                 <div className="flex items-center space-x-2">
+                    <label htmlFor="user-filter" className="text-gray-400 font-medium text-sm whitespace-nowrap">Filter by Prefix:</label>
+                    <select
+                        id="user-filter"
+                        value={filterValue}
+                        onChange={e => setFilter(e.target.value)}
+                        className="admin-select sm:w-auto px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron"
+                        aria-label="Filter by User ID Prefix"
+                    >
+                        {prefixes.map(id => <option key={id} value={id}>{id}</option>)}
+                    </select>
+                </div>
+                <button
+                    onClick={handleExport}
+                    className="px-4 py-2 bg-lifewood-castleton-green text-lifewood-paper font-semibold rounded-md hover:bg-opacity-80 transition-colors text-sm flex items-center justify-center"
+                    aria-label="Export current view to CSV"
                 >
-                    {prefixes.map(id => <option key={id} value={id}>{id}</option>)}
-                </select>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                    Export as CSV
+                </button>
             </div>
             <div className="overflow-x-auto custom-scrollbar">
                 <table className="min-w-full divide-y divide-gray-700">
@@ -104,18 +166,22 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
                     <tbody className="bg-gray-900 divide-y divide-gray-700">
                         {data.length === 0 ? (
                             <tr><td colSpan={headers.length} className="text-center py-8 text-gray-500">No records found for the selected filter.</td></tr>
-                        ) : data.map((item) => (
-                            <tr key={item.id || item.user_id} className="hover:bg-gray-800 transition-colors">
-                                {Object.keys(item).map(key => (
-                                    <td key={key} className="px-6 py-4 whitespace-nowrap text-sm font-mono">
-                                        {key === 'created_at' ? new Date(item[key]).toLocaleString() :
-                                         typeof item[key] === 'boolean' ? 
-                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item[key] ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
-                                             {item[key] ? 'PASS' : 'FAIL'}
-                                         </span>
-                                         : String(item[key])}
-                                    </td>
-                                ))}
+                        ) : data.map((item, index) => (
+                            <tr key={item.id || item.user_id + index} className="hover:bg-gray-800 transition-colors">
+                                {headers.map(header => {
+                                    const key = header.toLowerCase().replace(/ /g, '_');
+                                    const cellData = item[key];
+                                    return (
+                                        <td key={`${item.id}-${key}`} className="px-6 py-4 whitespace-nowrap text-sm font-mono">
+                                            {key === 'created_at' ? new Date(cellData).toLocaleString() :
+                                            typeof cellData === 'boolean' ? 
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${cellData ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
+                                                {cellData ? 'PASS' : 'FAIL'}
+                                            </span>
+                                            : String(cellData)}
+                                        </td>
+                                    );
+                                })}
                             </tr>
                         ))}
                     </tbody>
