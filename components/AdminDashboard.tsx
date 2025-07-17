@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { Profile, TestResult } from '../types';
@@ -113,6 +112,30 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
             : testResults.filter(r => r.user_id.startsWith(resultsFilter)),
         [testResults, resultsFilter]
     );
+
+    const profileCountsByPrefix = useMemo(() => {
+        const counts: { [key: string]: number } = {};
+        USER_ID_PREFIXES.forEach(prefix => {
+            if (prefix === 'All Users') {
+                counts[prefix] = profiles.length;
+            } else {
+                counts[prefix] = profiles.filter(p => p.user_id.startsWith(prefix)).length;
+            }
+        });
+        return counts;
+    }, [profiles]);
+
+    const resultCountsByPrefix = useMemo(() => {
+        const counts: { [key: string]: number } = {};
+        USER_ID_PREFIXES.forEach(prefix => {
+            if (prefix === 'All Users') {
+                counts[prefix] = testResults.length;
+            } else {
+                counts[prefix] = testResults.filter(r => r.user_id.startsWith(prefix)).length;
+            }
+        });
+        return counts;
+    }, [testResults]);
     
     const handleExport = useCallback(() => {
         const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -126,7 +149,7 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
         }
     }, [activeTab, filteredProfiles, filteredResults, profilesFilter, resultsFilter]);
 
-    const renderTable = (headers: string[], data: any[], filterValue: string, setFilter: (val: string) => void, prefixes: string[]) => (
+    const renderTable = (headers: string[], data: any[], filterValue: string, setFilter: (val: string) => void, prefixes: string[], counts: { [key: string]: number }) => (
         <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
             <div className="p-4 border-b border-gray-700 flex flex-wrap items-center justify-between gap-4">
                  <div className="flex items-center space-x-2">
@@ -138,7 +161,7 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
                         className="admin-select sm:w-auto px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron"
                         aria-label="Filter by User ID Prefix"
                     >
-                        {prefixes.map(id => <option key={id} value={id}>{id}</option>)}
+                        {prefixes.map(id => <option key={id} value={id}>{id} ({counts[id] ?? 0})</option>)}
                     </select>
                 </div>
                 <button
@@ -231,8 +254,8 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
                     </div>
                 ) : (
                     <div>
-                        {activeTab === 'profiles' && renderTable(['User ID', 'Created At'], filteredProfiles.map(p => ({user_id: p.user_id, created_at: p.created_at})), profilesFilter, setProfilesFilter, USER_ID_PREFIXES)}
-                        {activeTab === 'results' && renderTable(['ID', 'Created At', 'User ID', 'WPM', 'Accuracy', 'True Accuracy', 'Pass Status'], filteredResults, resultsFilter, setResultsFilter, USER_ID_PREFIXES)}
+                        {activeTab === 'profiles' && renderTable(['User ID', 'Created At'], filteredProfiles.map(p => ({user_id: p.user_id, created_at: p.created_at})), profilesFilter, setProfilesFilter, USER_ID_PREFIXES, profileCountsByPrefix)}
+                        {activeTab === 'results' && renderTable(['ID', 'Created At', 'User ID', 'WPM', 'Accuracy', 'True Accuracy', 'Pass Status'], filteredResults, resultsFilter, setResultsFilter, USER_ID_PREFIXES, resultCountsByPrefix)}
                     </div>
                 )}
             </main>
