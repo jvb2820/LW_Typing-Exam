@@ -17,7 +17,9 @@ const USER_ID_PREFIXES = [
   'PHBYU',
   'PHCEC',
   'PHBYUMG',
-  'PHBYUCG'
+  'PHBYUCG',
+  'PHJJ',
+  'PHNX'
 ];
 
 const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
