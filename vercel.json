@@ -1,8 +1,5 @@
 {
   "rewrites": [
-    { "source": "/signin", "destination": "/signin" },
-    { "source": "/signin2", "destination": "/signin2" },
-    { "source": "/admin", "destination": "/admin" },
-    { "source": "/", "destination": "/" }
+    { "source": "/(.*)", "destination": "/" }
   ]
 }
