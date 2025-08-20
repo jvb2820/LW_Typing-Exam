@@ -18,6 +18,7 @@ const USER_ID_PREFIXES = [
   'PHCEC',
   'PHBYUMG',
   'PHBYUCG',
+  'PHCITU',
   'PHJJ',
   'PHNX'
 ];
