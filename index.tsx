@@ -3,6 +3,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import SignIn from './components/SignIn'; // Component for user/admin sign-in
+import SignIn2 from './components/SignIn2'; // New sign-in with full name
 import AdminDashboard from './components/AdminDashboard'; // New admin dashboard component
 
 const rootElement = document.getElementById('root');
@@ -15,6 +16,7 @@ const RootApp: React.FC = () => {
     return localStorage.getItem('currentUserId');
   });
   const [isAdmin, setIsAdmin] = useState<boolean>(() => sessionStorage.getItem('isAdmin') === 'true');
+  const [signInView, setSignInView] = useState<'id' | 'name'>('id');
 
   // Effect to disable the right-click context menu application-wide
   useEffect(() => {
@@ -55,7 +57,21 @@ const RootApp: React.FC = () => {
   }
 
   if (!currentUserId) {
-    return <SignIn onSignIn={handleSignIn} onAdminSignIn={handleAdminSignIn} />;
+    if (signInView === 'id') {
+      return (
+        <SignIn
+          onSignIn={handleSignIn}
+          onAdminSignIn={handleAdminSignIn}
+          onSwitchToNameSignIn={() => setSignInView('name')}
+        />
+      );
+    }
+    return (
+      <SignIn2
+        onSignIn={handleSignIn}
+        onSwitchToIdSignIn={() => setSignInView('id')}
+      />
+    );
   }
 
   return <App userId={currentUserId} onSignOut={handleSignOut} />;

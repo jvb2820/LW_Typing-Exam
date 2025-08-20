@@ -5,6 +5,7 @@ import { supabase } from '../supabaseClient'; // Import Supabase client
 interface SignInProps {
   onSignIn: (userId: string) => void;
   onAdminSignIn: () => void;
+  onSwitchToNameSignIn: () => void;
 }
 
 const USER_ID_PREFIXES = [
@@ -22,7 +23,7 @@ const USER_ID_PREFIXES = [
   'PHNX'
 ];
 
-const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
+const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn, onSwitchToNameSignIn }) => {
   // State for User Sign-In
   const [prefix, setPrefix] = useState<string>(USER_ID_PREFIXES[0]);
   const [numberPart, setNumberPart] = useState<string>('');
@@ -117,7 +118,7 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
-                    placeholder=" "
+                    placeholder="admin"
                     autoFocus
                     disabled={isAdminLoading}
                   />
@@ -133,7 +134,7 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
-                    placeholder=" "
+                    placeholder="••••••••••••"
                     disabled={isAdminLoading}
                   />
               </div>
@@ -199,14 +200,25 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
             </button>
           </form>
         )}
-         <div className="text-center mt-6">
+        <div className="text-center mt-6 pt-6 border-t border-lifewood-dark-serpent border-opacity-10">
+          {!isLoginViewAdmin && (
+            <button
+                onClick={onSwitchToNameSignIn}
+                className="text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline"
+                disabled={isLoading}
+            >
+                Sign in with Full Name
+            </button>
+          )}
+          <div className={!isLoginViewAdmin ? "mt-3" : ""}>
             <button
                 onClick={() => setLoginViewAdmin(!isLoginViewAdmin)}
                 className="text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline"
                 disabled={isLoading || isAdminLoading}
             >
-                {isLoginViewAdmin ? 'User Sign-in' : 'Admin Login'}
+                {isLoginViewAdmin ? 'Back to User Sign-in' : 'Admin Login'}
             </button>
+          </div>
         </div>
       </div>
        <footer className="text-center mt-12 text-sm text-lifewood-dark-serpent opacity-75">
