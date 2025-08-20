@@ -1,13 +1,14 @@
 
 import React, { useState, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 interface SignIn2Props {
   onSignIn: (userId: string) => void;
-  onSwitchToIdSignIn: () => void;
 }
 
-const SignIn2: React.FC<SignIn2Props> = ({ onSignIn, onSwitchToIdSignIn }) => {
+const SignIn2: React.FC<SignIn2Props> = ({ onSignIn }) => {
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -91,7 +92,7 @@ const SignIn2: React.FC<SignIn2Props> = ({ onSignIn, onSwitchToIdSignIn }) => {
         
         <div className="text-center mt-6 pt-6 border-t border-lifewood-dark-serpent border-opacity-10">
           <button
-              onClick={onSwitchToIdSignIn}
+              onClick={() => navigate('/signin')}
               className="text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline"
               disabled={isLoading}
           >
