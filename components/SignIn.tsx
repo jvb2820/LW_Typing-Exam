@@ -203,7 +203,13 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
         )}
         <div className="text-center mt-6 pt-6 border-t border-lifewood-dark-serpent border-opacity-10">
           {!isLoginViewAdmin && (
-            
+            <button
+                onClick={() => navigate('/signin2')}
+                className="text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline"
+                disabled={isLoading}
+            >
+                Sign in with Full Name
+            </button>
           )}
           <div className={!isLoginViewAdmin ? "mt-3" : ""}>
             <button
