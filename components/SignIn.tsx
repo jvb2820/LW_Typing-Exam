@@ -1,11 +1,11 @@
 
 import React, { useState, FormEvent } from 'react';
-import * as ReactRouterDOM from 'react-router-dom';
 import { supabase } from '../supabaseClient'; // Import Supabase client
 
 interface SignInProps {
   onSignIn: (userId: string) => void;
   onAdminSignIn: () => void;
+  onSwitchToNameSignIn: () => void;
 }
 
 const USER_ID_PREFIXES = [
@@ -23,7 +23,7 @@ const USER_ID_PREFIXES = [
   'PHNX'
 ];
 
-const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
+const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn, onSwitchToNameSignIn }) => {
   // State for User Sign-In
   const [prefix, setPrefix] = useState<string>(USER_ID_PREFIXES[0]);
   const [numberPart, setNumberPart] = useState<string>('');
@@ -202,13 +202,13 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
         )}
         <div className="text-center mt-6 pt-6 border-t border-lifewood-dark-serpent border-opacity-10">
           {!isLoginViewAdmin && (
-            <ReactRouterDOM.Link
-                to="/signin2"
-                className={`text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
-                aria-disabled={isLoading}
+            <button
+                onClick={onSwitchToNameSignIn}
+                className="text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline"
+                disabled={isLoading}
             >
                 Sign in with Full Name
-            </ReactRouterDOM.Link>
+            </button>
           )}
           <div className={!isLoginViewAdmin ? "mt-3" : ""}>
             <button

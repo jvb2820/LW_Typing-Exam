@@ -1,13 +1,13 @@
 
 import React, { useState, FormEvent } from 'react';
-import * as ReactRouterDOM from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 interface SignIn2Props {
   onSignIn: (userId: string) => void;
+  onSwitchToIdSignIn: () => void;
 }
 
-const SignIn2: React.FC<SignIn2Props> = ({ onSignIn }) => {
+const SignIn2: React.FC<SignIn2Props> = ({ onSignIn, onSwitchToIdSignIn }) => {
   const [fullName, setFullName] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -90,13 +90,13 @@ const SignIn2: React.FC<SignIn2Props> = ({ onSignIn }) => {
         </form>
         
         <div className="text-center mt-6 pt-6 border-t border-lifewood-dark-serpent border-opacity-10">
-          <ReactRouterDOM.Link
-              to="/signin"
-              className={`text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
-              aria-disabled={isLoading}
+          <button
+              onClick={onSwitchToIdSignIn}
+              className="text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline"
+              disabled={isLoading}
           >
               Sign in with User ID
-          </ReactRouterDOM.Link>
+          </button>
         </div>
       </div>
       <footer className="text-center mt-12 text-sm text-lifewood-dark-serpent opacity-75">
