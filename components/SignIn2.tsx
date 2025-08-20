@@ -90,15 +90,7 @@ const SignIn2: React.FC<SignIn2Props> = ({ onSignIn }) => {
           </button>
         </form>
         
-        <div className="text-center mt-6 pt-6 border-t border-lifewood-dark-serpent border-opacity-10">
-          <button
-              onClick={() => navigate('/signin')}
-              className="text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline"
-              disabled={isLoading}
-          >
-              Sign in with User ID
-          </button>
-        </div>
+        
       </div>
       <footer className="text-center mt-12 text-sm text-lifewood-dark-serpent opacity-75">
         <p>

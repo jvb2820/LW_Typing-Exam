@@ -5,6 +5,7 @@ import App from './App';
 import SignIn from './components/SignIn';
 import SignIn2 from './components/SignIn2';
 import AdminDashboard from './components/AdminDashboard';
+import AdminSignIn from './components/AdminSignIn'; // Import the Admin Sign-In Component
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -30,8 +31,8 @@ const AppRouter: React.FC = () => {
   
   const handleAdminSignIn = useCallback(() => {
     sessionStorage.setItem('isAdmin', 'true');
-    setIsAdmin(true);
-    navigate('/admin');
+    setIsAdmin(true);  // Make sure to update the state here
+    navigate('/admin'); // Redirect to Admin Dashboard after successful admin sign-in
   }, [navigate]);
 
   const handleSignOut = useCallback(() => {
@@ -45,6 +46,14 @@ const AppRouter: React.FC = () => {
     setIsAdmin(false);
     navigate('/signin');
   }, [navigate]);
+
+  useEffect(() => {
+    // Synchronize sessionStorage with state after refresh.
+    const storedIsAdmin = sessionStorage.getItem('isAdmin');
+    if (storedIsAdmin) {
+      setIsAdmin(true); // This will handle the issue on page refresh
+    }
+  }, []);  // Runs only once on component mount
 
   return (
     <Routes>
@@ -65,6 +74,16 @@ const AppRouter: React.FC = () => {
             <SignIn2 onSignIn={handleSignIn} />
           ) : (
             <Navigate to={isAdmin ? '/admin' : '/'} replace />
+          )
+        }
+      />
+      <Route
+        path="/admin-signin" // Admin sign-in page
+        element={
+          !currentUserId && !isAdmin ? (
+            <AdminSignIn /> // The Admin Sign-In component
+          ) : (
+            <Navigate to="/admin" replace />
           )
         }
       />
