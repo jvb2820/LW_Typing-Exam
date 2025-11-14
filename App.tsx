@@ -3,9 +3,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import TypingTest from './components/TypingTest';
 import StatsDisplay from './components/StatsDisplay';
-import { TestStats, ActiveTestType, ExerciseKey } from './types';
+import { TestStats, ActiveTestType, ExerciseKey, UserInfo } from './types';
 import { supabase } from './supabaseClient'; 
 import { COMMON_WORDS } from './constants/words';
+import UserInfoForm from './components/UserInfoForm';
 import {
   WARMUP_HOME_ROW,
   WARMUP_ALPHABET,
@@ -126,34 +127,49 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
   const [completedExercises, setCompletedExercises] = useState<Set<ExerciseKey>>(new Set());
   const [progressError, setProgressError] = useState<string | null>(null);
 
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [isInfoFormVisible, setIsInfoFormVisible] = useState<boolean>(false);
+  const [isCheckingData, setIsCheckingData] = useState<boolean>(true);
+
   useEffect(() => {
-    const fetchCompletedExercises = async () => {
+    const fetchData = async () => {
         if (!userId) return;
+        setIsCheckingData(true);
         setProgressError(null);
         try {
-            const { data, error } = await supabase
-                .from('completed_exercises')
-                .select('exercise_key')
-                .eq('user_id', userId);
-            
-            if (error) {
-                console.error("Error fetching completed exercises:", error.message, error);
-                setProgressError("Could not load practice progress. The database may be misconfigured.");
-                setCompletedExercises(new Set()); // Gracefully fail
-                return;
-            }
-            if (data) {
-                const completedKeys = data.map(item => item.exercise_key as ExerciseKey);
+            const [exercisesResponse, userInfoResponse] = await Promise.all([
+                supabase.from('completed_exercises').select('exercise_key').eq('user_id', userId),
+                supabase.from('user_info').select('*').eq('user_id', userId).maybeSingle()
+            ]);
+
+            if (exercisesResponse.error) {
+                console.error("Error fetching completed exercises:", exercisesResponse.error.message);
+                setProgressError("Could not load practice progress.");
+            } else if (exercisesResponse.data) {
+                const completedKeys = exercisesResponse.data.map(item => item.exercise_key as ExerciseKey);
                 setCompletedExercises(new Set(completedKeys));
             }
+
+            if (userInfoResponse.error) {
+                 console.error("Error fetching user info:", userInfoResponse.error.message);
+                 setProgressError("Could not check user profile.");
+            } else if (userInfoResponse.data) {
+                 setUserInfo(userInfoResponse.data as UserInfo);
+            } else {
+                 setUserInfo(null);
+            }
+
         } catch (e) {
-            console.error("Exception fetching completed exercises:", e);
-            setProgressError("Could not load practice progress due to a network or application error.");
+            console.error("Exception fetching initial data:", e);
+            setProgressError("Could not load initial data due to a network or application error.");
             setCompletedExercises(new Set());
+            setUserInfo(null);
+        } finally {
+            setIsCheckingData(false);
         }
     };
     
-    fetchCompletedExercises();
+    fetchData();
     setView('dashboard');
     setResults(null);
   }, [userId]);
@@ -180,6 +196,17 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
       }
     }
   }, [activeTestType, userId, completedExercises]);
+
+  const handleInfoSubmitSuccess = async () => {
+    setIsInfoFormVisible(false);
+    // Refetch user info to get the latest data
+    const { data, error } = await supabase.from('user_info').select('*').eq('user_id', userId).single();
+    if (data && !error) {
+        setUserInfo(data);
+    } else if (error) {
+        setProgressError("Could not reload your profile information.");
+    }
+  };
 
   const prepareTest = useCallback((testType: ActiveTestType) => {
     setResults(null);
@@ -323,10 +350,22 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
   ) : null;
 
   const renderDashboard = () => {
+    if (isCheckingData) {
+      return (
+          <div className="text-center p-12 text-lifewood-dark-serpent opacity-70">
+              Loading dashboard...
+          </div>
+      );
+    }
+    
+    const hasUserInfo = userInfo !== null;
     const totalPracticeExercises = EXERCISES_DATA.flatMap(cat => cat.items).length;
     const completedCount = completedExercises.size;
     const progressPercentage = totalPracticeExercises > 0 ? (completedCount / totalPracticeExercises) * 100 : 0;
     const areAllPracticeExercisesCompleted = completedCount >= totalPracticeExercises;
+
+    const isPracticeLocked = !hasUserInfo;
+    const isExamLocked = !hasUserInfo || !areAllPracticeExercisesCompleted;
 
     return (
       <div className="w-full max-w-xl mx-auto mt-2 p-8 bg-lifewood-white rounded-lg shadow-xl border border-lifewood-dark-serpent border-opacity-10">
@@ -355,32 +394,56 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
 
         <div className="space-y-6">
           <button
-            onClick={() => setView('exercise_selection')}
-            className="w-full px-6 py-4 bg-lifewood-saffaron text-lifewood-dark-serpent font-semibold rounded-lg hover:bg-lifewood-earth-yellow transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans"
+            onClick={() => setIsInfoFormVisible(true)}
+            className={`w-full px-6 py-4 font-semibold rounded-lg transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans ${
+                hasUserInfo
+                ? 'bg-lifewood-dark-serpent text-lifewood-paper hover:bg-opacity-80 focus:ring-lifewood-dark-serpent'
+                : 'bg-lifewood-saffaron text-lifewood-dark-serpent hover:bg-lifewood-earth-yellow focus:ring-lifewood-saffaron'
+            }`}
           >
-            Practice Exercises
+            {hasUserInfo ? 'Edit Your Profile' : 'Complete Your Profile'}
           </button>
+          
+          <div className="relative group">
+              <button
+                onClick={() => setView('exercise_selection')}
+                disabled={isPracticeLocked}
+                className={`w-full px-6 py-4 font-semibold rounded-lg transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans ${
+                    isPracticeLocked
+                    ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
+                    : 'bg-lifewood-saffaron text-lifewood-dark-serpent hover:bg-lifewood-earth-yellow focus:ring-lifewood-saffaron'
+                }`}
+                 aria-describedby={isPracticeLocked ? 'practice-tooltip' : undefined}
+              >
+                Practice Exercises
+              </button>
+              {isPracticeLocked && (
+                <div id="practice-tooltip" role="tooltip" className="absolute bottom-full mb-2 w-max max-w-full left-1/2 -translate-x-1/2 px-3 py-1.5 bg-lifewood-dark-serpent text-lifewood-paper text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                    Complete your profile to unlock practice.
+                </div>
+            )}
+          </div>
           <div className="relative group">
             <button
               onClick={() => prepareTest('final_exam')}
-              disabled={!areAllPracticeExercisesCompleted}
+              disabled={isExamLocked}
               className={`w-full px-6 py-4 flex items-center justify-center text-lg font-semibold rounded-lg transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans ${
-                  !areAllPracticeExercisesCompleted
+                  isExamLocked
                   ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
                   : 'bg-lifewood-castleton-green text-lifewood-paper hover:bg-opacity-80 focus:ring-lifewood-castleton-green'
               }`}
-              aria-describedby={!areAllPracticeExercisesCompleted ? 'final-exam-tooltip' : undefined}
+              aria-describedby={isExamLocked ? 'final-exam-tooltip' : undefined}
             >
-              {!areAllPracticeExercisesCompleted && (
+              {isExamLocked && (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                 </svg>
               )}
               Start Final Exam (1 min)
             </button>
-            {!areAllPracticeExercisesCompleted && (
+            {isExamLocked && (
                 <div id="final-exam-tooltip" role="tooltip" className="absolute bottom-full mb-2 w-max max-w-full left-1/2 -translate-x-1/2 px-3 py-1.5 bg-lifewood-dark-serpent text-lifewood-paper text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                Complete all practice exercises to unlock.
+                {!hasUserInfo ? 'Complete your profile to unlock.' : 'Complete all practice exercises to unlock.'}
               </div>
             )}
           </div>
@@ -451,6 +514,16 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
 
   return (
     <div className="min-h-screen bg-lifewood-paper text-lifewood-dark-serpent flex flex-col items-center justify-center p-4 selection:bg-lifewood-saffaron selection:text-lifewood-dark-serpent">
+      {isInfoFormVisible && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4" aria-modal="true" role="dialog">
+              <UserInfoForm 
+                userId={userId} 
+                initialData={userInfo}
+                onSuccess={handleInfoSubmitSuccess} 
+                onClose={() => setIsInfoFormVisible(false)}
+              />
+          </div>
+      )}
       <header className="w-full max-w-3xl mx-auto mb-2 sm:mb-0">
         <div className="flex justify-between items-center mb-2">
           <div>

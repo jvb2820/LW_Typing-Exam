@@ -27,6 +27,14 @@ export interface Profile {
   created_at: string;
 }
 
+export interface UserInfo {
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  country: string;
+  created_at: string;
+}
+
 export interface TestResult {
   id: number;
   created_at: string;
