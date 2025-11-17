@@ -1,4 +1,5 @@
 
+
 import React, { useState, FormEvent, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { COUNTRIES } from '../constants/countries';
@@ -14,6 +15,7 @@ interface UserInfoFormProps {
 const UserInfoForm: React.FC<UserInfoFormProps> = ({ userId, initialData, onSuccess, onClose }) => {
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
   const [country, setCountry] = useState<string>('Philippines');
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -23,6 +25,7 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ userId, initialData, onSucc
     if (initialData) {
       setFirstName(initialData.first_name);
       setLastName(initialData.last_name);
+      setEmail(initialData.email || '');
       setCountry(initialData.country);
       setIsEditMode(true);
     }
@@ -32,10 +35,16 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ userId, initialData, onSucc
     event.preventDefault();
     const trimmedFirstName = firstName.trim();
     const trimmedLastName = lastName.trim();
+    const trimmedEmail = email.trim();
 
-    if (!trimmedFirstName || !trimmedLastName || !country) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedFirstName || !trimmedLastName || !country || !trimmedEmail) {
       setError('All fields are required.');
       return;
+    }
+    if (!emailRegex.test(trimmedEmail)) {
+        setError('Please enter a valid email address.');
+        return;
     }
 
     setError('');
@@ -46,6 +55,7 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ userId, initialData, onSucc
         user_id: userId,
         first_name: trimmedFirstName,
         last_name: trimmedLastName,
+        email: trimmedEmail,
         country: country,
       };
 
@@ -118,6 +128,22 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ userId, initialData, onSucc
               onChange={(e) => setLastName(e.target.value)}
               className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
               placeholder="e.g., Doe"
+              required
+              disabled={isLoading}
+            />
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-lifewood-dark-serpent opacity-90 mb-1">
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
+              placeholder="e.g., john.doe@example.com"
               required
               disabled={isLoading}
             />

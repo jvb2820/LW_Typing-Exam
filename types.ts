@@ -22,15 +22,11 @@ export interface TestStats {
 }
 
 // Interfaces for data fetched for the admin dashboard
-export interface Profile {
-  user_id: string;
-  created_at: string;
-}
-
 export interface UserInfo {
   user_id: string;
   first_name: string;
   last_name: string;
+  email: string;
   country: string;
   created_at: string;
 }
