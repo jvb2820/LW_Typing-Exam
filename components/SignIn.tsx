@@ -89,7 +89,7 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
     setAdminError('');
     setIsAdminLoading(true);
 
-    if (username === 'admin' && password === 'PhCBIT12345') {
+    if (username === 'admin' && password === '1234') {
       onAdminSignIn();
     } else {
       setAdminError('Invalid username or password.');
