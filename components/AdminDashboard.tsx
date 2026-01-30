@@ -22,6 +22,7 @@ const USER_ID_PREFIXES = [
   'PHLWP',
   'PHUCLM',
   'PHUCTU',
+  'PHUCMC',
   'No Prefix' // Added option for no prefix
 ];
 
