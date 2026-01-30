@@ -20,6 +20,7 @@ const USER_ID_PREFIXES = [
   'PHBYUDRC',
   'PHBYUUG',
   'PHLWP',
+  'PHUCLM',
   'No Prefix' // Added option for no prefix
 ];
 
@@ -218,11 +219,11 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
                   return (
                     <td key={`${item.id}-${key}`} className="px-6 py-4 whitespace-nowrap text-sm font-mono">
                       {key === 'created_at' ? new Date(cellData).toLocaleString() :
-                      typeof cellData === 'boolean' ? 
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${cellData ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
-                          {cellData ? 'PASS' : 'FAIL'}
-                      </span>
-                      : String(cellData)}
+                        typeof cellData === 'boolean' ?
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${cellData ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
+                            {cellData ? 'PASS' : 'FAIL'}
+                          </span>
+                          : String(cellData)}
                     </td>
                   );
                 })}
@@ -275,7 +276,7 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
           </div>
         ) : (
           <div>
-            {activeTab === 'profiles' && renderTable(['User ID', 'Created At'], filteredProfiles.map(p => ({user_id: p.user_id, created_at: p.created_at})), profilesFilter, setProfilesFilter, USER_ID_PREFIXES, profileCountsByPrefix)}
+            {activeTab === 'profiles' && renderTable(['User ID', 'Created At'], filteredProfiles.map(p => ({ user_id: p.user_id, created_at: p.created_at })), profilesFilter, setProfilesFilter, USER_ID_PREFIXES, profileCountsByPrefix)}
             {activeTab === 'results' && renderTable(['ID', 'Created At', 'User ID', 'WPM', 'Accuracy', 'True Accuracy', 'Pass Status'], filteredResults, resultsFilter, setResultsFilter, USER_ID_PREFIXES, resultCountsByPrefix)}
           </div>
         )}

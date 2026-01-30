@@ -23,6 +23,7 @@ const USER_ID_PREFIXES = [
   'PHBYUDRC',
   'PHJJ',
   'PHNX',
+  'PHUCLM',
   'PHLWP'
 ];
 
@@ -65,14 +66,14 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
       const { error: dbError } = await supabase
         .from('profiles')
         .insert([{ user_id: trimmedUserId }]);
-      
+
       if (dbError) {
         if (dbError.code === '23505') {
           onSignIn(trimmedUserId);
         } else {
           console.error('Error processing User ID:', dbError.message, dbError);
           setError(`Failed to process User ID: ${dbError.message}. Ensure 'profiles' table is correctly set up.`);
-          setIsLoading(false); 
+          setIsLoading(false);
         }
       } else {
         onSignIn(trimmedUserId);
@@ -80,10 +81,10 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
     } catch (e: any) {
       console.error('Sign-in error:', e);
       setError('An unexpected error occurred. Please try again.');
-      setIsLoading(false); 
+      setIsLoading(false);
     }
   };
-  
+
   const handleAdminSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAdminError('');
@@ -111,38 +112,38 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
           <form onSubmit={handleAdminSubmit} noValidate>
             <div className="space-y-4">
               <div>
-                  <label htmlFor="username" className="block text-sm font-medium text-lifewood-dark-serpent opacity-90 mb-1">
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
-                    placeholder=" "
-                    autoFocus
-                    disabled={isAdminLoading}
-                  />
+                <label htmlFor="username" className="block text-sm font-medium text-lifewood-dark-serpent opacity-90 mb-1">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
+                  placeholder=" "
+                  autoFocus
+                  disabled={isAdminLoading}
+                />
               </div>
               <div>
-                  <label htmlFor="password"className="block text-sm font-medium text-lifewood-dark-serpent opacity-90 mb-1">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
-                    placeholder=" "
-                    disabled={isAdminLoading}
-                  />
+                <label htmlFor="password" className="block text-sm font-medium text-lifewood-dark-serpent opacity-90 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-lifewood-sea-salt border border-lifewood-dark-serpent border-opacity-20 rounded-md focus:ring-2 focus:ring-lifewood-saffaron focus:border-lifewood-saffaron placeholder-lifewood-dark-serpent placeholder-opacity-50 text-lifewood-dark-serpent"
+                  placeholder=" "
+                  disabled={isAdminLoading}
+                />
               </div>
             </div>
-             {adminError && (
+            {adminError && (
               <p className="mt-4 text-sm text-red-600 text-center" role="alert">
                 {adminError}
               </p>
@@ -203,17 +204,17 @@ const SignIn: React.FC<SignInProps> = ({ onSignIn, onAdminSignIn }) => {
             </button>
           </form>
         )}
-         <div className="text-center mt-6">
-            <button
-                onClick={() => setLoginViewAdmin(!isLoginViewAdmin)}
-                className="text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline"
-                disabled={isLoading || isAdminLoading}
-            >
-                {isLoginViewAdmin ? 'User Sign-in' : 'Admin Login'}
-            </button>
+        <div className="text-center mt-6">
+          <button
+            onClick={() => setLoginViewAdmin(!isLoginViewAdmin)}
+            className="text-sm text-lifewood-dark-serpent opacity-70 hover:opacity-100 transition-opacity hover:underline"
+            disabled={isLoading || isAdminLoading}
+          >
+            {isLoginViewAdmin ? 'User Sign-in' : 'Admin Login'}
+          </button>
         </div>
       </div>
-       <footer className="text-center mt-12 text-sm text-lifewood-dark-serpent opacity-75">
+      <footer className="text-center mt-12 text-sm text-lifewood-dark-serpent opacity-75">
         <p>
           Lifewood Typing Exam
         </p>
