@@ -24,6 +24,7 @@ const USER_ID_PREFIXES = [
   'PHJJ',
   'PHNX',
   'PHUCLM',
+  'PHUCTU',
   'PHLWP'
 ];
 
