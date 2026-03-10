@@ -303,12 +303,35 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     const pass_status = results.wpm >= 25 && results.accuracy >= 90 && results.trueAccuracy >= 85;
 
     try {
-      const effectiveWpm = Math.min(results.wpm, 40);
-      const wpmScore = (effectiveWpm / 40) * 40;
-      const accuracyScore = (results.accuracy / 100) * 30;
-      const trueAccuracyScore = (results.trueAccuracy / 100) * 30;
+      let finalScore: number;
 
-      const finalScore = Math.floor(wpmScore + accuracyScore + trueAccuracyScore);
+      if (pass_status) {
+        // Passing tiers - check from highest to lowest
+        if (results.wpm >= 40 && results.accuracy >= 98 && results.trueAccuracy >= 98) {
+          finalScore = 95; // A+
+        } else if (results.wpm >= 35 && results.accuracy >= 96 && results.trueAccuracy >= 95) {
+          finalScore = 90; // A
+        } else if (results.wpm >= 30 && results.accuracy >= 93 && results.trueAccuracy >= 90) {
+          finalScore = 85; // B
+        } else {
+          finalScore = 80; // C (meets basic passing: 25 WPM, 90% acc, 85% true acc)
+        }
+      } else {
+        // Failing tiers - based on how many criteria are met
+        const criteriaMet = [
+          results.wpm >= 25,
+          results.accuracy >= 90,
+          results.trueAccuracy >= 85,
+        ].filter(Boolean).length;
+
+        if (criteriaMet >= 2) {
+          finalScore = 70; // D+
+        } else if (criteriaMet === 1) {
+          finalScore = 65; // D
+        } else {
+          finalScore = 60; // F
+        }
+      }
 
       const newAttemptCount = dbExamAttempts + 1;
 
