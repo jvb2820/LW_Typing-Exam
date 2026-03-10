@@ -113,6 +113,7 @@ const SpecialNote: React.FC = () => (
 
 const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
   const [examAttempts, setExamAttempts] = useState<number>(1);
+  const [dbExamAttempts, setDbExamAttempts] = useState<number>(0);
   const MAX_EXAM_ATTEMPTS = 3;
 
   const [results, setResults] = useState<TestStats | null>(null);
@@ -140,9 +141,10 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
       setIsCheckingData(true);
       setProgressError(null);
       try {
-        const [exercisesResponse, userInfoResponse] = await Promise.all([
+        const [exercisesResponse, userInfoResponse, testResultsResponse] = await Promise.all([
           supabase.from('completed_exercises').select('exercise_key').eq('user_id', userId),
-          supabase.from('user_info').select('*').eq('user_id', userId).maybeSingle()
+          supabase.from('user_info').select('*').eq('user_id', userId).maybeSingle(),
+          supabase.from('test_results').select('id', { count: 'exact' }).eq('user_id', userId)
         ]);
 
         if (exercisesResponse.error) {
@@ -160,6 +162,12 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
           setUserInfo(userInfoResponse.data as UserInfo);
         } else {
           setUserInfo(null);
+        }
+
+        if (testResultsResponse.error) {
+          console.error("Error fetching test results count:", testResultsResponse.error.message);
+        } else {
+          setDbExamAttempts(testResultsResponse.count || 0);
         }
 
       } catch (e) {
@@ -219,7 +227,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     setTypingTestKey(prevKey => prevKey + 1);
 
     if (testType === 'final_exam' && !isRetake) {
-      setExamAttempts(1);
+      setExamAttempts(dbExamAttempts + 1);
     } else if (testType === 'final_exam' && isRetake) {
       setExamAttempts(prev => prev + 1);
     }
@@ -295,12 +303,20 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     const pass_status = results.wpm >= 25 && results.accuracy >= 90 && results.trueAccuracy >= 85;
 
     try {
+      const effectiveWpm = Math.min(results.wpm, 60);
+      const wpmScore = (effectiveWpm / 60) * 40;
+      const accuracyScore = (results.accuracy / 100) * 30;
+      const trueAccuracyScore = (results.trueAccuracy / 100) * 30;
+
+      const finalScore = Math.floor(wpmScore + accuracyScore + trueAccuracyScore);
+
       const payload = {
         user_id: userId,
         wpm: results.wpm,
         accuracy: results.accuracy,
         true_accuracy: results.trueAccuracy,
         pass_status: pass_status,
+        score: finalScore,
       };
 
       const { error } = await supabase
@@ -319,6 +335,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
         setIsResultsSubmitted(false);
       } else {
         setIsResultsSubmitted(true);
+        setDbExamAttempts(prev => prev + 1);
       }
     } catch (e: any) {
       console.error('Supabase call error:', e);
@@ -374,7 +391,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     const areAllPracticeExercisesCompleted = completedCount >= totalPracticeExercises;
 
     const isPracticeLocked = !hasUserInfo;
-    const isExamLocked = !hasUserInfo || !areAllPracticeExercisesCompleted;
+    const isExamLocked = !hasUserInfo || !areAllPracticeExercisesCompleted || dbExamAttempts >= MAX_EXAM_ATTEMPTS;
 
     return (
       <div className="w-full max-w-xl mx-auto mt-2 p-8 bg-lifewood-white rounded-lg shadow-xl border border-lifewood-dark-serpent border-opacity-10">
@@ -405,8 +422,8 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
           <button
             onClick={() => setIsInfoFormVisible(true)}
             className={`w-full px-6 py-4 font-semibold rounded-lg transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans ${hasUserInfo
-                ? 'bg-lifewood-dark-serpent text-lifewood-paper hover:bg-opacity-80 focus:ring-lifewood-dark-serpent'
-                : 'bg-lifewood-saffaron text-lifewood-dark-serpent hover:bg-lifewood-earth-yellow focus:ring-lifewood-saffaron'
+              ? 'bg-lifewood-dark-serpent text-lifewood-paper hover:bg-opacity-80 focus:ring-lifewood-dark-serpent'
+              : 'bg-lifewood-saffaron text-lifewood-dark-serpent hover:bg-lifewood-earth-yellow focus:ring-lifewood-saffaron'
               }`}
           >
             {hasUserInfo ? 'Edit Your Profile' : 'Complete Your Profile'}
@@ -417,8 +434,8 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
               onClick={() => setView('exercise_selection')}
               disabled={isPracticeLocked}
               className={`w-full px-6 py-4 font-semibold rounded-lg transition-colors text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans ${isPracticeLocked
-                  ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
-                  : 'bg-lifewood-saffaron text-lifewood-dark-serpent hover:bg-lifewood-earth-yellow focus:ring-lifewood-saffaron'
+                ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
+                : 'bg-lifewood-saffaron text-lifewood-dark-serpent hover:bg-lifewood-earth-yellow focus:ring-lifewood-saffaron'
                 }`}
               aria-describedby={isPracticeLocked ? 'practice-tooltip' : undefined}
             >
@@ -435,8 +452,8 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
               onClick={() => prepareTest('final_exam')}
               disabled={isExamLocked}
               className={`w-full px-6 py-4 flex items-center justify-center text-lg font-semibold rounded-lg transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-lifewood-white font-sans ${isExamLocked
-                  ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
-                  : 'bg-lifewood-castleton-green text-lifewood-paper hover:bg-opacity-80 focus:ring-lifewood-castleton-green'
+                ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
+                : 'bg-lifewood-castleton-green text-lifewood-paper hover:bg-opacity-80 focus:ring-lifewood-castleton-green'
                 }`}
               aria-describedby={isExamLocked ? 'final-exam-tooltip' : undefined}
             >
@@ -449,7 +466,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
             </button>
             {isExamLocked && (
               <div id="final-exam-tooltip" role="tooltip" className="absolute bottom-full mb-2 w-max max-w-full left-1/2 -translate-x-1/2 px-3 py-1.5 bg-lifewood-dark-serpent text-lifewood-paper text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {!hasUserInfo ? 'Complete your profile to unlock.' : 'Complete all practice exercises to unlock.'}
+                {!hasUserInfo ? 'Complete your profile to unlock.' : !areAllPracticeExercisesCompleted ? 'Complete all practice exercises to unlock.' : 'Maximum exam attempts reached.'}
               </div>
             )}
           </div>
@@ -475,8 +492,8 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
                   key={exercise.key}
                   onClick={() => prepareTest(exercise.key)}
                   className={`p-4 rounded-lg text-left transition-all duration-200 border border-lifewood-dark-serpent border-opacity-10 shadow-sm hover:shadow-md ${isCompleted
-                      ? 'bg-lifewood-castleton-green bg-opacity-10 hover:bg-lifewood-castleton-green hover:bg-opacity-20'
-                      : 'bg-lifewood-sea-salt hover:bg-lifewood-earth-yellow hover:bg-opacity-40'
+                    ? 'bg-lifewood-castleton-green bg-opacity-10 hover:bg-lifewood-castleton-green hover:bg-opacity-20'
+                    : 'bg-lifewood-sea-salt hover:bg-lifewood-earth-yellow hover:bg-opacity-40'
                     }`}
                 >
                   <div className="flex justify-between items-start">

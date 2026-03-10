@@ -16,7 +16,7 @@ export interface TestStats {
   accuracy: number; // Word-based accuracy: (Correct Words / Words Processed) * 100
   trueAccuracy: number; // Character-based accuracy
   timeElapsed: number;
-  correctWords: number; 
+  correctWords: number;
   // incorrectWords is removed
   // skippedWords is removed
 }
@@ -39,6 +39,7 @@ export interface TestResult {
   accuracy: number;
   true_accuracy: number;
   pass_status: boolean;
+  score?: number;
 }
 
 // New type to distinguish between different tests

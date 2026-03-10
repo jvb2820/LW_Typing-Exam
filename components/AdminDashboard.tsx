@@ -80,6 +80,7 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
 
   const [profilesFilter, setProfilesFilter] = useState('All Users');
   const [resultsFilter, setResultsFilter] = useState('All Users');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchData = useCallback(async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -113,23 +114,43 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
   };
 
   // Filter profiles and test results based on the selected filter
-  const filteredProfiles = useMemo(() =>
-    profilesFilter === 'All Users'
-      ? profiles
-      : profilesFilter === 'No Prefix'
-        ? profiles.filter(p => isUserWithoutPrefix(p.user_id)) // Filter users without prefixes
-        : profiles.filter(p => p.user_id.startsWith(profilesFilter)),
-    [profiles, profilesFilter]
-  );
+  const filteredProfiles = useMemo(() => {
+    let filtered = profiles;
 
-  const filteredResults = useMemo(() =>
-    resultsFilter === 'All Users'
-      ? testResults
-      : resultsFilter === 'No Prefix'
-        ? testResults.filter(r => isUserWithoutPrefix(r.user_id)) // Filter users without prefixes
-        : testResults.filter(r => r.user_id.startsWith(resultsFilter)),
-    [testResults, resultsFilter]
-  );
+    // Apply prefix filter
+    if (profilesFilter === 'No Prefix') {
+      filtered = filtered.filter(p => isUserWithoutPrefix(p.user_id));
+    } else if (profilesFilter !== 'All Users') {
+      filtered = filtered.filter(p => p.user_id.startsWith(profilesFilter));
+    }
+
+    // Apply search filter
+    if (searchQuery.trim() !== '') {
+      const lowerQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter(p => p.user_id.toLowerCase().includes(lowerQuery));
+    }
+
+    return filtered;
+  }, [profiles, profilesFilter, searchQuery]);
+
+  const filteredResults = useMemo(() => {
+    let filtered = testResults;
+
+    // Apply prefix filter
+    if (resultsFilter === 'No Prefix') {
+      filtered = filtered.filter(r => isUserWithoutPrefix(r.user_id));
+    } else if (resultsFilter !== 'All Users') {
+      filtered = filtered.filter(r => r.user_id.startsWith(resultsFilter));
+    }
+
+    // Apply search filter
+    if (searchQuery.trim() !== '') {
+      const lowerQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter(r => r.user_id.toLowerCase().includes(lowerQuery));
+    }
+
+    return filtered;
+  }, [testResults, resultsFilter, searchQuery]);
 
   // Fixing the profile count for "No Prefix"
   const profileCountsByPrefix = useMemo(() => {
@@ -176,17 +197,42 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
   const renderTable = (headers: string[], data: any[], filterValue: string, setFilter: (val: string) => void, prefixes: string[], counts: { [key: string]: number }) => (
     <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div className="p-4 border-b border-gray-700 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center space-x-2">
-          <label htmlFor="user-filter" className="text-gray-400 font-medium text-sm whitespace-nowrap">Filter by Prefix:</label>
-          <select
-            id="user-filter"
-            value={filterValue}
-            onChange={e => setFilter(e.target.value)}
-            className="admin-select sm:w-auto px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron"
-            aria-label="Filter by User ID Prefix"
-          >
-            {USER_ID_PREFIXES.map(id => <option key={id} value={id}>{id} ({counts[id] ?? 0})</option>)}
-          </select>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <label htmlFor="user-filter" className="text-gray-400 font-medium text-sm whitespace-nowrap">Filter by Prefix:</label>
+            <select
+              id="user-filter"
+              value={filterValue}
+              onChange={e => setFilter(e.target.value)}
+              className="admin-select sm:w-auto px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron"
+              aria-label="Filter by User ID Prefix"
+            >
+              {USER_ID_PREFIXES.map(id => <option key={id} value={id}>{id} ({counts[id] ?? 0})</option>)}
+            </select>
+          </div>
+          <div className="flex items-center space-x-2">
+            <label htmlFor="user-search" className="text-gray-400 font-medium text-sm whitespace-nowrap">Search User ID:</label>
+            <input
+              id="user-search"
+              type="text"
+              placeholder="e.g. PHBYU..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="admin-select sm:w-auto px-3 py-2 bg-gray-900 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-lifewood-saffaron"
+              aria-label="Search by User ID"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="text-gray-400 hover:text-gray-200 focus:outline-none"
+                aria-label="Clear Search"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
         <button
           onClick={handleExport}
@@ -279,7 +325,7 @@ const AdminDashboard: React.FC<{ onSignOut: () => void }> = ({ onSignOut }) => {
         ) : (
           <div>
             {activeTab === 'profiles' && renderTable(['User ID', 'Created At'], filteredProfiles.map(p => ({ user_id: p.user_id, created_at: p.created_at })), profilesFilter, setProfilesFilter, USER_ID_PREFIXES, profileCountsByPrefix)}
-            {activeTab === 'results' && renderTable(['ID', 'Created At', 'User ID', 'WPM', 'Accuracy', 'True Accuracy', 'Pass Status'], filteredResults, resultsFilter, setResultsFilter, USER_ID_PREFIXES, resultCountsByPrefix)}
+            {activeTab === 'results' && renderTable(['ID', 'Created At', 'User ID', 'WPM', 'Accuracy', 'True Accuracy', 'Pass Status', 'Score'], filteredResults, resultsFilter, setResultsFilter, USER_ID_PREFIXES, resultCountsByPrefix)}
           </div>
         )}
       </main>
