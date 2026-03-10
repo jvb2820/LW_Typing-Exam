@@ -306,18 +306,37 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
       let finalScore: number;
 
       if (pass_status) {
-        // Passing tiers - check from highest to lowest
+        // Calculate progress between current tier and next tier thresholds
+        const calcProgress = (val: number, tierMin: number, nextMin: number) =>
+          Math.min(Math.max((val - tierMin) / (nextMin - tierMin), 0), 1);
+
         if (results.wpm >= 40 && results.accuracy >= 98 && results.trueAccuracy >= 98) {
-          finalScore = 95; // A+
+          // A+ tier: base 100
+          finalScore = 100;
         } else if (results.wpm >= 35 && results.accuracy >= 96 && results.trueAccuracy >= 95) {
-          finalScore = 90; // A
+          // A tier: 95-99
+          const wpmProg = calcProgress(results.wpm, 35, 40);
+          const accProg = calcProgress(results.accuracy, 96, 98);
+          const trueAccProg = calcProgress(results.trueAccuracy, 95, 98);
+          const bonus = Math.floor(((wpmProg + accProg + trueAccProg) / 3) * 4);
+          finalScore = 95 + bonus;
         } else if (results.wpm >= 30 && results.accuracy >= 93 && results.trueAccuracy >= 90) {
-          finalScore = 85; // B
+          // B tier: 90-94
+          const wpmProg = calcProgress(results.wpm, 30, 35);
+          const accProg = calcProgress(results.accuracy, 93, 96);
+          const trueAccProg = calcProgress(results.trueAccuracy, 90, 95);
+          const bonus = Math.floor(((wpmProg + accProg + trueAccProg) / 3) * 4);
+          finalScore = 90 + bonus;
         } else {
-          finalScore = 80; // C (meets basic passing: 25 WPM, 90% acc, 85% true acc)
+          // C tier: 85-89
+          const wpmProg = calcProgress(results.wpm, 25, 30);
+          const accProg = calcProgress(results.accuracy, 90, 93);
+          const trueAccProg = calcProgress(results.trueAccuracy, 85, 90);
+          const bonus = Math.floor(((wpmProg + accProg + trueAccProg) / 3) * 4);
+          finalScore = 85 + bonus;
         }
       } else {
-        // Failing tiers - based on how many criteria are met
+        // Failing tiers: 75, 77, 79 based on criteria met
         const criteriaMet = [
           results.wpm >= 25,
           results.accuracy >= 90,
@@ -325,11 +344,11 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
         ].filter(Boolean).length;
 
         if (criteriaMet >= 2) {
-          finalScore = 70; // D+
+          finalScore = 79; // D+
         } else if (criteriaMet === 1) {
-          finalScore = 65; // D
+          finalScore = 77; // D
         } else {
-          finalScore = 60; // F
+          finalScore = 75; // F
         }
       }
 
