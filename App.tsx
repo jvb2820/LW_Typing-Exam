@@ -144,7 +144,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
         const [exercisesResponse, userInfoResponse, testResultsResponse] = await Promise.all([
           supabase.from('completed_exercises').select('exercise_key').eq('user_id', userId),
           supabase.from('user_info').select('*').eq('user_id', userId).maybeSingle(),
-          supabase.from('test_results').select('id', { count: 'exact' }).eq('user_id', userId)
+          supabase.from('test_results').select('attempt_count').eq('user_id', userId).maybeSingle()
         ]);
 
         if (exercisesResponse.error) {
@@ -167,7 +167,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
         if (testResultsResponse.error) {
           console.error("Error fetching test results count:", testResultsResponse.error.message);
         } else {
-          setDbExamAttempts(testResultsResponse.count || 0);
+          setDbExamAttempts(testResultsResponse.data?.attempt_count || 0);
         }
 
       } catch (e) {
@@ -310,6 +310,8 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
 
       const finalScore = Math.floor(wpmScore + accuracyScore + trueAccuracyScore);
 
+      const newAttemptCount = dbExamAttempts + 1;
+
       const payload = {
         user_id: userId,
         wpm: results.wpm,
@@ -317,11 +319,13 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
         true_accuracy: results.trueAccuracy,
         pass_status: pass_status,
         score: finalScore,
+        attempt_count: newAttemptCount,
+        created_at: new Date().toISOString(),
       };
 
       const { error } = await supabase
         .from('test_results')
-        .insert([payload]);
+        .upsert([payload], { onConflict: 'user_id' });
 
       if (error) {
         console.error('Error saving test results:', error.message, error);
@@ -335,7 +339,7 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
         setIsResultsSubmitted(false);
       } else {
         setIsResultsSubmitted(true);
-        setDbExamAttempts(prev => prev + 1);
+        setDbExamAttempts(newAttemptCount);
       }
     } catch (e: any) {
       console.error('Supabase call error:', e);

@@ -40,6 +40,7 @@ export interface TestResult {
   true_accuracy: number;
   pass_status: boolean;
   score?: number;
+  attempt_count?: number;
 }
 
 // New type to distinguish between different tests
