@@ -303,8 +303,8 @@ const App: React.FC<AppProps> = ({ userId, onSignOut }) => {
     const pass_status = results.wpm >= 25 && results.accuracy >= 90 && results.trueAccuracy >= 85;
 
     try {
-      const effectiveWpm = Math.min(results.wpm, 60);
-      const wpmScore = (effectiveWpm / 60) * 40;
+      const effectiveWpm = Math.min(results.wpm, 40);
+      const wpmScore = (effectiveWpm / 40) * 40;
       const accuracyScore = (results.accuracy / 100) * 30;
       const trueAccuracyScore = (results.trueAccuracy / 100) * 30;
 
